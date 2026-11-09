@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@saltmarket/shared':
+        specifier: workspace:*
+        version: link:packages/shared
+      '@saltmarket/sim':
+        specifier: workspace:*
+        version: link:packages/sim
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2

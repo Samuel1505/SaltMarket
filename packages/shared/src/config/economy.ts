@@ -74,7 +74,19 @@ export const ECONOMY = {
   },
 
   // §5 — Town Fund recycles harbor tax; balance above the cap is burned weekly.
-  townFund: { balanceCap: m(5000) },
+  townFund: { balanceCap: m(5000), startBalance: m(1000) },
+
+  // NPC_AGENTS §6 — spending guard, derived per NPC from its start cash and daily costs.
+  npcPolicy: { cashFloorDays: 3, maxSpendPerDayOfStartCash: 0.8, maxSpendPerTradeOfStartCash: 0.3, maxOrderQty: 20 },
+
+  // NPC_AGENTS §2 — patience smoothing: each tick a price moves this share of the way to its target, scaled by (1 − patience × 0.7).
+  priceSmoothing: 0.9,
+  // Smokehouse sells cured fish at this share of the Captain ceiling (it knows what the ship pays).
+  smokehouseAskOfCeiling: 0.92,
+  // Producer unit cost as a share of anchor (ECONOMY §8.1 cost_basis).
+  producerCostOfAnchor: 0.85,
+  // Time-lapse "flood" shock: a bot dumps goods at this share of anchor.
+  floodPriceOfAnchor: 0.6,
 
   // §8.3 — supply elasticity.
   elasticity: 0.8,
@@ -122,11 +134,12 @@ export const ECONOMY = {
     fisherman: { count: 3, startCash: m(200), startInventory: { fish: 10 }, baseOutputPerDay: 8, upkeepPerDay: m(20), targetStock: 12 },
     salt_panner: { count: 2, startCash: m(150), startInventory: { salt: 12 }, baseOutputPerDay: 6, upkeepPerDay: m(12), targetStock: 14 },
     woodcutter: { count: 2, startCash: m(150), startInventory: { timber: 15 }, baseOutputPerDay: 10, upkeepPerDay: m(12), targetStock: 15 },
-    cooper: { count: 1, startCash: m(300), startInventory: { timber: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(10), targetStock: 4 },
+    cooper: { count: 1, startCash: m(300), startInventory: { timber: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(10), targetStock: 4, inputTargets: { timber: 6 } },
     // Approved loop: the Smokehouse sells at most ~half the Captain's order per visit, leaving room for players.
     smokehouse: {
       count: 1, startCash: m(600), startInventory: { fish: 10, salt: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(15), targetStock: 8,
       maxCuredSellPerVisit: 8,
+      inputTargets: { fish: 12, salt: 6, barrel: 2 },
     },
   },
 

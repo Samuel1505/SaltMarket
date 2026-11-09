@@ -17,6 +17,8 @@
     "lint": "tsx scripts/lint-rules.ts"
   },
   "devDependencies": {
+    "@saltmarket/shared": "workspace:*",
+    "@saltmarket/sim": "workspace:*",
     "@types/node": "^24.0.0",
     "tsx": "^4.20.0",
     "typescript": "~5.9.3",
