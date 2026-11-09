@@ -45,6 +45,7 @@ describe('live server → NearLedger → goods contract (model)', () => {
     await flush();
     expect(await mismatches(b2, l2)).toEqual([]);
     expect(chain.calls.every((c) => c.mints.length + c.transfers.length + c.burns.length > 0)).toBe(true); // no empty txs (C6)
+    expect(b2.judgeLedger(1).accounts.find((a) => a.ownerKind === 'townfund')?.accountId).toBe('townfund.samuelowen.testnet');
   });
 
   it('refuses to settle a fresh world onto a contract that already has settlements', async () => {

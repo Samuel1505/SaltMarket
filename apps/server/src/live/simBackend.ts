@@ -265,10 +265,11 @@ export class SimBackend implements GameBackend {
   judgeLedger(limit: number): JudgeLedger {
     const st = this.opts.ledger.status();
     const accounts: JudgeLedger['accounts'] = Object.values(this.s.accounts).filter((a) => a.id !== 'flood-trader').map((a) => {
-      const e = this.opts.ledger.explorerUrl('account', a.id);
+      const ledgerId = this.opts.ledger.accountIdFor?.(a.id) ?? a.id;
+      const e = this.opts.ledger.explorerUrl('account', ledgerId);
       return {
         ownerKind: a.kind === 'townfund' ? 'townfund' : a.kind === 'captain' ? 'captain' : a.kind === 'npc' ? 'npc' : 'player',
-        ownerName: a.name, accountId: a.id, ...(e ? { explorerUrl: e } : {}),
+        ownerName: a.name, accountId: ledgerId, ...(e ? { explorerUrl: e } : {}),
         marksPips: a.marks, ledgerMarksPips: this.lastSettled.has(`${a.id}|marks`) ? Number(this.lastSettled.get(`${a.id}|marks`)) : null,
       };
     });

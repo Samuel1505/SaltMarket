@@ -67,6 +67,10 @@ export class NearLedger implements LedgerAdapter {
     this.contract = contract ?? new RpcGoodsContract(cfg);
   }
 
+  accountIdFor(simId: string): string {
+    return this.accountId(simId);
+  }
+
   /** C3: the on-chain account id for a sim account. */
   accountId(simId: string): string {
     return mapAccountId(simId, this.cfg.authorityId);

@@ -12,6 +12,8 @@ export interface LedgerAdapter {
   /** Apply a batch of net deltas. Must be idempotent by batchId (a retry never double-applies). */
   settle(batch: SettlementBatch): Promise<Receipt>;
   balanceOf(account: string, token: TokenId): Promise<bigint>;
+  /** Optional: the ledger's own id for a sim account (NEAR: "fisher-1" → "fisher-1.samuelowen.testnet"). */
+  accountIdFor?(simId: string): string;
   /** Optional: several tokens of one account in a single read (fewer RPC calls). */
   balancesOf?(account: string, tokens: TokenId[]): Promise<bigint[]>;
   explorerUrl(kind: 'tx' | 'account', id: string): string | null;

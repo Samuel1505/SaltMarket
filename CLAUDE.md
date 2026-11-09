@@ -145,6 +145,7 @@ saltmarket/
 | `docs/BUILD_PLAN.md` | Know what to build next, in what order, with what acceptance criteria and cut list |
 | `docs/TESTING_AND_DEMO.md` | Write tests and build/rehearse the demo and the Storm scenario |
 | `docs/SUBMISSION.md` | Prepare the public repo, README, demo post, and the final submission payload |
+| `docs/FRONTEND_HANDOFF.md` | Build `apps/web` end to end against the backend (frontend owner starts here) |
 
 If a doc and this file disagree, **this file wins**; then tell the human and fix the doc.
 
@@ -238,6 +239,8 @@ Open questions for the human:
 - README is judge-ready; repo is public before 2026-11-14T23:59Z; demo post is live; submission sent only after human confirmation.
 
 ## 14. Backend → frontend interface (read this if you work in `apps/web`)
+
+**Start with [`docs/FRONTEND_HANDOFF.md`](docs/FRONTEND_HANDOFF.md)**: setup, what to build, data flow, real payloads, per-feature guide, acceptance checklist. Client helpers (applyDelta, applyFeed, formatMarks, timers, `cmd()`) are in `@saltmarket/shared/client`.
 
 Maintained by the backend owner's session. The source of truth is `packages/shared/src/protocol.ts` (currently **v0.2.0**; 0.2.0 only added the error codes `SOCIAL_UNAVAILABLE`, `BAD_CREDENTIAL` and per-venue history); this section is the short version. If they disagree, the file wins.
 
