@@ -39,7 +39,7 @@ One pass of the loop takes about 1–3 game days (60–180 real seconds at defau
 
 ## 3. The first minute (onboarding)
 
-Target: a new player completes a first profitable trade within 60 seconds.
+Target: a new player completes a first trade within about 60 seconds: **gather → sell** (approved 2026-11-09). The first ship docks about 50 seconds into a fresh world.
 
 1. **Sign in** with a social login (single click). No wallet language.
 2. **Welcome card (3 lines max):** "You have a stall, 300 marks, and a few goods. Buy low, craft, sell high. The ship arrives in about 2 days."
@@ -85,7 +85,7 @@ Why would anyone use a Hall and pay a fee? Because the Harbor Market has frictio
 When a merchant goes broke it **closes its shop** and shows "Closed: needs investment". Any player can invest marks to reopen it and receives a share of the merchant's profits until repaid with a return (ECONOMY §8.6). Investors need to read the market: a shop that failed because of a storm is a good bet; one that failed because its inputs are structurally too expensive is not. Merchants' closure and reopening appear in the event feed.
 
 ### Harbor Market (the default venue, run by the town)
-Free to list, but: posted prices only (no order book), each actor can complete only one purchase per tick at stalls, and the 2% harbor tax applies. It is always available so the game never deadlocks without a Hall.
+Free to list, but: posted prices only (no order book), each actor can complete only one purchase per tick at stalls, and the 2% harbor tax applies. Merchants post buy offers here, so you can always sell straight to a merchant (players' standing buy offers are Halls-only). It is always available so the game never deadlocks without a Hall.
 
 ## 6. The town and its NPCs
 

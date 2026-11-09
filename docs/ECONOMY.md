@@ -95,8 +95,8 @@ Over any rolling 5-day window after warm-up, **marks burned ÷ marks minted shou
 ## 6. Markets and venues
 
 ### 6.1 Harbor Market (default, run by the town)
-- **Mechanism:** posted prices. Each seller lists goods at an ask. Buyers pick listings.
-- **Friction:** each buyer can complete **one** purchase per tick at stalls; no standing bids.
+- **Mechanism:** posted prices. Each seller lists goods at an ask. Buyers pick listings. **Merchants also post buy offers** (Smokehouse: fish, salt, barrels; Cooper: timber; Captain: cured fish while docked) so a player can sell immediately; this is what makes the approved gather → sell first trade work (2026-11-09). Players cannot post standing buy offers here (Halls only).
+- **Friction:** each buyer can complete **one** purchase per tick at stalls.
 - **Cost:** harbor tax (2%) only; no hall fee.
 
 ### 6.2 Exchange Hall (player-owned)
@@ -120,12 +120,15 @@ where `friction_penalty` for the Harbor Market is a small constant (default 1.5%
 
 | Parameter | Start value |
 | --- | --- |
+| First arrival | tick 20 in a fresh world (~50 s; approved 2026-11-09) |
 | Visit interval | every 48 ticks (2 days) |
 | Dock duration | 12 ticks |
 | Volume per visit | up to 16 cured fish |
 | Price ceiling at first visit | 60 marks |
 | Ceiling adjustment | After a visit: if fully filled within 6 ticks, ceiling −5%; if unfilled ≥ 25%, ceiling +10% |
 | Ceiling bounds | min 35, max 90 marks |
+
+**Smokehouse cap:** the Smokehouse supplies at most 8 of the 16 per visit (approved 2026-11-09), leaving room for players.
 
 **Buying rule:** while docked, the Captain buys the cheapest available cured-fish asks (across all venues, after fees) at or below the ceiling until volume is met or the ship leaves. Payment is **minted marks** (faucet). Unmet demand is simply lost (the ship sails away).
 
@@ -215,7 +218,7 @@ Merchants that buy a good lower their bids as supply floods in, and stop buying 
 1. Implement the sim with the config above.
 2. Run `pnpm sim:headless --seed S --days 30` over at least 10 seeds with **no players** (NPCs only), then with 5 scripted "bot players" using naive strategies.
 3. Check:
-   - No account reaches zero permanently unless it is an NPC that then respawns.
+   - No account reaches zero permanently; a broke merchant closes (`MERCHANT_CLOSED`) and is reopened by an investor (`MERCHANT_REOPENED`) or the Town Fund (`MERCHANT_RESCUED`).
    - No price stays pinned at the 0.5× or 2.5× anchor clamp for more than 3 days outside a Storm.
    - Burn/mint ratio within 0.85–1.10 after day 5.
    - Total marks do not grow or shrink more than ±30% over days 5–30.

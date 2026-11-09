@@ -79,7 +79,7 @@ These come from the hackathon's own agent instructions plus common sense. Do not
 | Package manager | pnpm workspaces | Monorepo with shared packages |
 | Simulation | `packages/sim`: pure, deterministic TS, no I/O | Testable headless; reproducible demos via seeded RNG |
 | Server | Node + Fastify + WebSocket (`@fastify/websocket`) | Authoritative game state, tick loop, relayer |
-| Persistence | SQLite (`better-sqlite3`): event log + snapshots | Zero-ops; replayable |
+| Persistence | In-memory world + JSON snapshot (`data/world.json`, atomic write daily and on shutdown) | Zero-ops, no native modules; world state is plain JSON (approved 2026-11-09) |
 | Web | Vite + React + TypeScript, lightweight SVG/Canvas charts, **tokenized design system following Emil Kowalski's design-engineering skills** (see `docs/FRONTEND.md`) | Fast to build; polished, restrained motion; simple browser demo |
 | Contracts | Rust + `near-sdk-rs`, NEP-245 multi-token | The hint list in the track names NEP-245 |
 | Chain access | `near-api-js` (verify current package and API in docs) | Behind our own `LedgerAdapter` interface |
@@ -202,7 +202,6 @@ Next up:          Economy tuning (ECONOMY §11): raw goods sit at the 0.5× clam
                   at 90 — producers oversupply and only the Smokehouse feeds the ship. Then sim:storm /
                   sim:week reports, Storm-scenario test, Hall competition test, NearLedger (Phase 4).
 Known issues:     Economy untuned (see above). History endpoint returns all venues combined (venueId: null).
-                  Docs still mention SQLite and old event names (doc-update request pending with the human).
 Open questions for the human:
   - NEAR testnet account to use as the game authority? (human creates; never invent)
   - Social login: who owns widget vs. server verification? (TEAM_SPLIT §7)

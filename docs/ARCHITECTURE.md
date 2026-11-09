@@ -14,7 +14,7 @@ System design for the game server, simulation, client, and the ledger seam. Chai
                                       │  └────┬─────┘   └──────────┬───────────┘  │
                                       │       │ events             │ state        │
                                       │  ┌────▼─────┐        ┌─────▼──────┐       │
-                                      │  │Event log │        │ Snapshots  │ SQLite│
+                                      │  │Event log │        │ Snapshots  │ JSON  │
                                       │  └────┬─────┘        └────────────┘       │
                                       │       │ settlement intents                │
                                       │  ┌────▼─────────────────────────────┐     │
@@ -60,7 +60,7 @@ One call = one tick. Pure and deterministic. `inputs` are validated, ordered pla
 4. Production and crafting progress (completions emit goods).
 5. Market matching: Hall books (price-time), then Harbor Market purchases (one per actor).
 6. Captain logic (if docked).
-7. Daily boundary (tick % 24 == 0): rent, living costs, upkeep, demurrage, spoilage, Town Fund housekeeping, bankruptcy checks, NPC strategy review, Captain ceiling update, rollover metrics.
+7. Daily boundary (tick % 24 == 0): rent, living costs, upkeep, demurrage, spoilage, Town Fund housekeeping, closure checks (MERCHANT_CLOSED), NPC strategy review, Captain ceiling update, rollover metrics.
 8. Emit metrics snapshot and the event list.
 
 ### 3.3 State shape (sketch)
@@ -81,7 +81,7 @@ type WorldState = {
 Use plain JSON-serializable data (no class instances, Maps, or Dates) so snapshots and replays are trivial.
 
 ### 3.4 Events
-Every state change that matters emits a typed `SimEvent` (`TRADE`, `MINT`, `BURN`, `PRODUCE`, `CRAFT_DONE`, `SPOIL`, `RENT`, `FEE_PAID`, `STORM_START`, `NPC_DECISION`, `BANKRUPTCY`, `HALL_LICENSED`, ...). The event log is the audit trail, the settlement source, and the UI feed source.
+Every state change that matters emits a typed `SimEvent` (`TRADE`, `MINT`, `BURN`, `PRODUCE`, `CRAFT_DONE`, `SPOIL`, `RENT`, `FEE_PAID`, `STORM_START`, `NPC_DECISION`, `MERCHANT_CLOSED`, `MERCHANT_REOPENED`, `MERCHANT_RESCUED`, `HALL_LICENSED`, ...). The event log is the audit trail, the settlement source, and the UI feed source.
 
 ### 3.5 Time-lapse sandbox ("Watch a week", the fast-forward mode)
 
@@ -107,12 +107,11 @@ All merchant price and quantity decisions are made in `packages/sim/src/pricing/
 - Player commands arrive via WS, are validated and enqueued with a sequence number, and are consumed on the next tick.
 - After each tick: persist events, push a **state delta** to clients, and push settlement intents to the queue.
 
-### 4.2 Persistence (SQLite via `better-sqlite3`)
-- `events(seq INTEGER PK, tick INTEGER, type TEXT, payload JSON)`: append-only.
-- `snapshots(tick INTEGER PK, state JSON)`: every N ticks (default 24) and on graceful shutdown.
-- `sessions(id, playerId, createdAt, ...)` and `players(id, displayName, nearAccountId, ...)`.
-- `settlements(id, tickFrom, tickTo, status, txHash?, attempts, error?)`: the queue's durable record.
-- On boot: load the latest snapshot, then replay later events if needed. A `--fresh --seed N` flag starts a new world.
+### 4.2 Persistence (in-memory + JSON snapshot; approved 2026-11-09, replaces SQLite)
+- The world lives in memory as plain JSON (`WorldState`). Every game day and on graceful shutdown the server writes `{ world, tokens }` to `SNAPSHOT_PATH` (default `data/world.json`) via temp file + rename.
+- On boot: load the snapshot if present (invariants are checked first), else create a fresh world from `SEED`. Delete the file for a fresh world.
+- Settlement records and the feed are kept in memory (the last 200 of each); they are not needed to rebuild the world.
+- Replays for tests use the seed plus the recorded command order (determinism invariant).
 
 ### 4.3 Auth and sessions
 - Sign-in flow is an **adapter** (`AuthProvider`): `SocialLoginAuth` (real) and `GuestAuth` (dev/demo fallback, no external dependency). Details in `NEAR_INTEGRATION.md` §5.

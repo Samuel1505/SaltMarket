@@ -82,6 +82,9 @@ No wallets, addresses, tokens, gas, signing, or confirmations. Gathering, sellin
 
 ## 8. Approval gate (process)
 
+**Approved 2026-11-09** with edits: first trade is gather → sell (~60 s); first ship docks ~50 s into a fresh world; gather cooldown 10 s; the Smokehouse supplies at most half the Captain's order per visit; in-memory state + JSON snapshot instead of SQLite; lifecycle events `MERCHANT_CLOSED` / `MERCHANT_REOPENED` / `MERCHANT_RESCUED`.
+
+
 Before any code:
 1. Claude Code presents §1–§6 to the human in a short summary.
 2. The human approves or edits (numbers like cooldowns, ship interval, and rent are tunable).
