@@ -178,17 +178,34 @@ pnpm e2e                     # Playwright smoke test
 
 ## 11. Status (update this at the end of every session)
 
+One section per person (docs/TEAM_SPLIT.md §4). Each session edits only its own section.
+
+### Status — backend
+
 ```
-Phase:            0 — scaffolding (not started)
-Last session:     —
-What works:       —
+Loop approved:    2026-11-09
+  Approved changes: first trade is gather → sell (~60 s); first ship docks ~50 s into a fresh world
+  (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
+  visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
+  MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
+Phase:            0 done; protocol v0 published
+Last session:     2026-11-09
+What works:       pnpm monorepo (strict TS 5.9, Vitest, zod 4); shared economy config incl. approved
+                  loop values; packages/shared/src/protocol.ts v0.1.0 (REST, WS both directions,
+                  snapshot/delta, time-lapse, judge); rule lint (sim purity); typecheck/test/lint green
 In progress:      —
-Next up:          Present docs/GAME_LOOP.md to the human and get approval (record 'Loop approved: <date>'), then Phase 0 in docs/BUILD_PLAN.md
-Known issues:     —
+Next up:          pnpm dev:mock (step 3) → sim core (step 4) → real sim behind same endpoints (step 5,
+                  target: frontend playtest evening of Nov 10)
+Known issues:     docs still mention SQLite and old event names (doc-update request sent to the human)
 Open questions for the human:
-  - Preferred stack / contract experience? (defaults in Section 4)
   - NEAR testnet account to use as the game authority? (human creates; never invent)
-  - Social login provider preference? (see docs/NEAR_INTEGRATION.md §5)
+  - Social login: who owns widget vs. server verification? (TEAM_SPLIT §7)
+```
+
+### Status — frontend
+
+```
+(frontend owner's session maintains this section)
 ```
 
 ## 12. Things to ask the human early

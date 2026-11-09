@@ -6,10 +6,10 @@ export const GOODS = ['fish', 'salt', 'timber', 'barrel', 'cured_fish'] as const
 export type Good = (typeof GOODS)[number];
 
 export const RECIPES = ['craft_barrel', 'cure_fish'] as const;
-export type RecipeId = (typeof RECIPES)[number];
+export type RecipeKey = (typeof RECIPES)[number];
 
 export const GATHER_NODES = ['pier', 'pans', 'grove'] as const;
-export type GatherNodeId = (typeof GATHER_NODES)[number];
+export type GatherNodeKey = (typeof GATHER_NODES)[number];
 
 export const ARCHETYPES = ['fisherman', 'salt_panner', 'woodcutter', 'cooper', 'smokehouse', 'captain'] as const;
 export type Archetype = (typeof ARCHETYPES)[number];
