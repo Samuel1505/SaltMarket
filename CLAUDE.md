@@ -204,14 +204,15 @@ What works:       Everything in Phase 1–3 (sim, tuning, scenarios, mock + live
 In progress:      —
 Next up:          (human) First live run: `pnpm dev:chain` with .env pointing NEAR_AUTHORITY_KEY_FILE at the
                   function-call key file, on a FRESH world (delete data/world.json first). Then the frontend wires
-                  Privy (needs PRIVY_APP_ID / PRIVY_VERIFICATION_KEY from the team's Privy dashboard).
+                  Privy (needs PRIVY_APP_ID plus PRIVY_VERIFICATION_KEY or PRIVY_APP_SECRET in the server's .env).
 Known issues:     5 always-on bot players break the money checks (gather cap decision pending). Storm → Captain
                   short visit is seed-dependent (2 of 10). Explorer links off until URL templates are checked.
                   NPC sub-accounts are balance entries on the contract, not created NEAR accounts.
 Open questions for the human:
   - Testnet: samuelowen.testnet / goods.samuelowen.testnet are wired as defaults in docs; confirm before the first live run.
   - Social login split (frontend = Privy widget, backend = token check, done): confirm with teammate; record in
-    TEAM_SPLIT §7. Create the Privy app (dashboard) and share PRIVY_APP_ID; put PRIVY_VERIFICATION_KEY in .env.
+    TEAM_SPLIT §7. Create the Privy app (dashboard) and share PRIVY_APP_ID; in .env put PRIVY_APP_ID plus PRIVY_VERIFICATION_KEY
+    or (if the dashboard shows no key) PRIVY_APP_SECRET.
   - Gathering vs. bot players: lower the daily gather cap / yield? (changes the approved 30-s loop)
 ```
 

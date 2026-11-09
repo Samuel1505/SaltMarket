@@ -56,8 +56,8 @@ else {
   // On NEAR, settle once per game day by default to keep transactions (and gas allowance) modest.
   const settleEveryTicks = Number(process.env.SETTLE_EVERY_TICKS ?? (ledgerMode === 'near' ? 24 : 6));
   const social = socialVerifierFromEnv(process.env);
-  console.log(`social login: ${social ? 'Privy' : 'off (guest only)'}`);
-  live = new SimBackend({ seed, ledger, settleEveryTicks, ...(social ? { social } : {}), snapshotPath: process.env.SNAPSHOT_PATH ?? 'data/world.json', log: (m) => console.log(m) });
+  console.log(`social login: ${social ? social.mode : 'off (guest only)'}`);
+  live = new SimBackend({ seed, ledger, settleEveryTicks, ...(social ? { social: social.verifier } : {}), snapshotPath: process.env.SNAPSHOT_PATH ?? 'data/world.json', log: (m) => console.log(m) });
   backend = live;
 }
 

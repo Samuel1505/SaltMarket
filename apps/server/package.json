@@ -12,6 +12,7 @@
   "dependencies": {
     "@fastify/cors": "^11.4.1",
     "@fastify/websocket": "^11.3.7",
+    "@privy-io/node": "0.38.0",
     "@saltmarket/chain": "workspace:*",
     "@saltmarket/shared": "workspace:*",
     "@saltmarket/sim": "workspace:*",
