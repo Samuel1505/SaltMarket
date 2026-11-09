@@ -144,9 +144,9 @@ near contract call-function as-read-only "goods.$AUTHORITY" get_status json-args
 
 The server then needs, in its local `.env` only: `NEAR_NETWORK=testnet`, `NEAR_CONTRACT_ID=goods.$AUTHORITY`, `NEAR_AUTHORITY_ID=$AUTHORITY`, and the function-call key (exact env var names are the backend's call; see `REQUESTS.md`).
 
-## Decisions for the human
+## Decisions (2026-11-09)
 
-1. **Topology:** the contract on `goods.<authority>` with the authority as a separate account (recommended, and assumed above), or the contract on the authority account itself.
-2. **Contract account keys:** NEP-245 says an MT contract "should not have any access keys". Keeping the full-access key on `goods.<authority>` allows redeploys during the hackathon. Deleting it after the final deploy makes the code immutable. Recommended: keep it until Nov 14, then decide.
-3. **`repository` in Cargo.toml** (NEP-330 source metadata) is still a placeholder. Set it to the public repo URL before the deploy.
-4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.<authority>`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
+1. **Topology:** the contract is on `goods.samuleowen.testnet`; the authority is `samuleowen.testnet` (the account already exists).
+2. **Contract account keys:** keep the full-access key on `goods.samuleowen.testnet` until Nov 14 so fixes can be redeployed, then decide whether to delete it.
+3. **`repository` in Cargo.toml:** left as a TODO, to be filled in later.
+4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.samuleowen.testnet`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
