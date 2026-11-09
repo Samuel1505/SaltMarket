@@ -165,12 +165,13 @@ If a doc and this file disagree, **this file wins**; then tell the human and fix
 ```bash
 pnpm install                 # install all workspaces
 pnpm dev                     # server + web with MemoryLedger (offline-first)
-pnpm dev:chain               # server + web with NearLedger on testnet (needs .env)
+pnpm dev:chain               # server with NearLedger on testnet (needs .env: NEAR_* and the key file; see .env.example)
 pnpm sim:headless --seed 42 --days 30     # run the economy with no UI, print metrics
 pnpm sim:storm --seed 42                   # run the Storm scenario and print the response report
 pnpm sim:week --seed 42 --storm-day 3        # simulate a week (168 ticks) headless and print the story table
 pnpm sim:tune --seeds 10 [--bots 5]          # ECONOMY §11 stability checks over many seeds (PASS/FAIL)
 pnpm demo:seed [--seed 42] [--force]         # demo world with two labeled demo Halls → data/world.json
+pnpm near:check --contract goods.samuelowen.testnet --authority samuelowen.testnet   # read-only contract status (signs nothing)
 pnpm test                    # unit + property + scenario tests
 pnpm typecheck && pnpm lint
 pnpm contracts:build         # build the Rust contract (wasm)
@@ -190,28 +191,27 @@ Loop approved:    2026-11-09
   (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
   visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
   MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
-Phase:            2 done (tuning + scenarios); Phase 3 server live. Branch backend/foundation (private repo).
+Phase:            4 (NEAR) code complete on the server side; not yet run against the live contract.
 Last session:     2026-11-09
-What works:       protocol v0.1.0; pnpm dev (real sim, MemoryLedger, JSON snapshot) and pnpm dev:mock; shared
-                  conformance suite passes on both. Economy tuned (docs/TUNING_LOG.md): NPC-only passes all
-                  ECONOMY §11 checks over 10 seeds × 30 days. Scenario tests pass: Storm (seed 42, all 6
-                  expectations), flood, Hall competition, closure/invest/rescue. pnpm sim:headless, sim:tune,
-                  sim:storm, sim:week, demo:seed. Docs updated (no SQLite; MERCHANT_* events vs reason codes).
+What works:       Everything in Phase 1–3 (sim, tuning, scenarios, mock + live servers, conformance on both).
+                  NearLedger (near-api-js 7.4.0): net deltas → mints/transfers/burns, sim id → NEAR id mapping,
+                  retryable vs fatal errors (fatal stops settlement and shows "stuck at …"), parts for big
+                  windows, empty windows skipped, contract cursor checked on boot (refuses a used contract for a
+                  never-settled world). Tested against a model of the contract (52 tests); read-only views
+                  checked live (cursor empty, 0 batches, 207 accounts affordable). Settlement cursor persisted
+                  (C2). Privy social login, server half (ES256 token check, stable player mapping). Per-venue
+                  price history. README draft.
 In progress:      —
-Next up:          Social login options + pick (report by end of Nov 10). Then NearLedger (REQUESTS C1, C3, C4,
-                  C7) ONLY after the human confirms; do not send any settlement to goods.samuelowen.testnet before. Optional: tidy unused imports in simBackend.ts.
-Contract requests: C2 DONE (snapshot stores the settlement cursor + unconfirmed batches; batches are sent in
-                  order, one at a time; an unexpected replay stops settlement and marks the ledger degraded).
-                  C8 DONE (contracts:build / contracts:test). C1, C3, C4 (error classes), C7 come with NearLedger.
-                  Note: snapshots without a ledger section (older ones, demo:seed output) settle every balance in
-                  their first batch, so they must only meet a fresh contract.
-Known issues:     5 always-on bot players still break the money checks (free gathering → oversupplied Captain;
-                  see TUNING_LOG). Storm → Captain short visit is seed-dependent (2 of 10 seeds).
-                  History endpoint returns all venues combined (venueId: null).
+Next up:          (human) First live run: `pnpm dev:chain` with .env pointing NEAR_AUTHORITY_KEY_FILE at the
+                  function-call key file, on a FRESH world (delete data/world.json first). Then the frontend wires
+                  Privy (needs PRIVY_APP_ID / PRIVY_VERIFICATION_KEY from the team's Privy dashboard).
+Known issues:     5 always-on bot players break the money checks (gather cap decision pending). Storm → Captain
+                  short visit is seed-dependent (2 of 10). Explorer links off until URL templates are checked.
+                  NPC sub-accounts are balance entries on the contract, not created NEAR accounts.
 Open questions for the human:
-  - NEAR testnet account to use as the game authority? (human creates; never invent)
-  - Social login: who owns widget vs. server verification? Proposed: frontend = widget + redirect,
-    backend = token check + account mapping. Confirm with teammate; record in TEAM_SPLIT §7.
+  - Testnet: samuelowen.testnet / goods.samuelowen.testnet are wired as defaults in docs; confirm before the first live run.
+  - Social login split (frontend = Privy widget, backend = token check, done): confirm with teammate; record in
+    TEAM_SPLIT §7. Create the Privy app (dashboard) and share PRIVY_APP_ID; put PRIVY_VERIFICATION_KEY in .env.
   - Gathering vs. bot players: lower the daily gather cap / yield? (changes the approved 30-s loop)
 ```
 
@@ -241,7 +241,7 @@ Open questions for the human:
 
 ## 14. Backend → frontend interface (read this if you work in `apps/web`)
 
-Maintained by the backend owner's session. The source of truth is `packages/shared/src/protocol.ts` (currently **v0.1.0**); this section is the short version. If they disagree, the file wins.
+Maintained by the backend owner's session. The source of truth is `packages/shared/src/protocol.ts` (currently **v0.2.0**; 0.2.0 only added the error codes `SOCIAL_UNAVAILABLE`, `BAD_CREDENTIAL` and per-venue history); this section is the short version. If they disagree, the file wins.
 
 **Import and versioning**
 - Import schemas and types from `@saltmarket/shared/protocol` (zod schemas with inferred TS types). Economy constants, if you need them, are in `@saltmarket/shared/config`, but prefer the `catalog` the server sends in the snapshot so the UI never hardcodes numbers.
@@ -255,7 +255,9 @@ Maintained by the backend owner's session. The source of truth is `packages/shar
 **REST** (paths in `ROUTES`)
 - Success: `{ ok: true, data }`. Failure: `{ ok: false, code, message }`; `message` is friendly and can be shown to players as-is.
 - `POST /api/auth/login` `{ provider: 'guest', displayName? }` → `Session { token, playerId, displayName, provider }`. Send `Authorization: Bearer <token>` on later requests.
+- **Social/email login (Privy):** sign the user in with `@privy-io/react-auth` (the Privy app id comes from the team's Privy dashboard), then `POST /api/auth/login` `{ provider: 'social', credential: await getAccessToken(), displayName? }`. The same Privy user always gets the same player. Errors: `BAD_CREDENTIAL` (401, invalid/expired token → ask them to sign in again), `SOCIAL_UNAVAILABLE` (501, server not configured → offer guest). The mock accepts any non-empty credential. Never show "wallet" wording; Privy's embedded wallet is not used by the game.
 - `GET /api/world` → `WorldSnapshot` (`me` is null without a token). `GET /api/npcs`, `GET /api/npcs/:id/explain` (tooltip payload), `GET /api/market/:good/history?days=5&venueId=` (sparklines), `GET /api/leaderboard`, `POST /api/timelapse`, `GET /healthz` (no envelope).
+- Ledger drawer: `GET /api/judge/ledger` → `mode` is `memory` or `near`. When settlement is stopped, `health` is `degraded` and the stuck batch has `error` like `ERR_INSUFFICIENT_BALANCE (needs a human)`; show it as "ledger: stuck at <batchId>". `explorerUrl` is present only when the server has explorer templates configured.
 - Judge only (`JUDGE_MODE=1` on the server and `?judge=1` on the client): `POST /api/dev/event` `{ kind: 'storm' | 'fair_winds' | 'salt_glut' | 'force_broke', npcId? }`, `POST /api/dev/speed` `{ speed?, paused? }`, `GET /api/judge/ledger`.
 
 **WebSocket** (`/ws?token=<token>`; without a token the socket is a read-only spectator and commands get `UNAUTHORIZED`)
@@ -292,7 +294,7 @@ Maintained by the backend owner's session. The source of truth is `packages/shar
 
 **Running the server**
 - `pnpm dev` runs the **real sim** (MemoryLedger, offline) on the same endpoints; judge routes there need `JUDGE_MODE=1 pnpm dev`. World persists to `data/world.json` (delete it for a fresh world). `pnpm dev:mock` stays available as a fallback.
-- `GET /api/market/:good/history` on the live server returns all venues combined (`venueId: null`).
+- `GET /api/market/:good/history` returns all venues combined (`venueId: null`) unless you pass `venueId`; per-venue history covers the last 7 days.
 
 **Mock server**
 - Run: `pnpm dev:mock` → http://127.0.0.1:3000 (override with `PORT`, `HOST`). Judge routes are on in mock unless `JUDGE_MODE=0`. The mock world starts on day 5 (tick 120) so sparklines have history; the first ship docks at tick 140 (~50 s), a storm hits at tick 204 (~3.5 min) and repeats every 15 min; Ludo the salt-panner starts closed (invest to reopen, or the Town Fund rescues him after 5 game days).
