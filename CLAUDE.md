@@ -188,13 +188,13 @@ Loop approved:    2026-11-09
   (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
   visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
   MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
-Phase:            0 done; protocol v0 published
+Phase:            0 done; protocol v0 published; pnpm dev:mock done
 Last session:     2026-11-09
 What works:       pnpm monorepo (strict TS 5.9, Vitest, zod 4); shared economy config incl. approved
                   loop values; packages/shared/src/protocol.ts v0.1.0 (REST, WS both directions,
                   snapshot/delta, time-lapse, judge); rule lint (sim purity); typecheck/test/lint green
 In progress:      —
-Next up:          pnpm dev:mock (step 3) → sim core (step 4) → real sim behind same endpoints (step 5,
+Next up:          sim core (step 4) → real sim behind same endpoints (step 5,
                   target: frontend playtest evening of Nov 10)
 Known issues:     docs still mention SQLite and old event names (doc-update request sent to the human)
 Open questions for the human:
@@ -278,5 +278,6 @@ Maintained by the backend owner's session. The source of truth is `packages/shar
 - Shocks: `{ kind: 'storm', day }`, `{ kind: 'flood', good, qty, day }`, `{ kind: 'close_merchant', npcId?, day, investDay? }`.
 
 **Mock server**
+- Run: `pnpm dev:mock` → http://127.0.0.1:3000 (override with `PORT`, `HOST`). Judge routes are on in mock unless `JUDGE_MODE=0`. The mock world starts on day 5 (tick 120) so sparklines have history; the first ship docks at tick 140 (~50 s), a storm hits at tick 204 (~3.5 min) and repeats every 15 min; Ludo the salt-panner starts closed (invest to reopen, or the Town Fund rescues him after 5 game days).
 - `pnpm dev:mock` serves scripted, protocol-valid data on the same endpoints (ticking clock, price changes, NPC reasoning, one closed merchant, a Storm, a ship arrival, feed items, plausible acks and errors). Switching to the real sim later needs no client changes. Target: real sim behind the same endpoints by the evening of Nov 10.
 - Need a protocol change? Write a request to the backend owner (what and why); don't edit `packages/shared`.
