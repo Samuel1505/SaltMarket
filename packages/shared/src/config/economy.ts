@@ -46,6 +46,9 @@ export const ECONOMY = {
     shutterAfterBrokeDays: 5,
   },
 
+  // GAME_DESIGN §4 — stall upgrade adds a second craft slot (cut-list item 7; keep it cheap to remove).
+  stall: { maxLevel: 2, upgradeCost: m(250) },
+
   // §5 faucets/sinks and §6 venues.
   fees: { harborTaxBps: 200, hallFeeMaxBps: 500, harborFrictionBps: 150 },
   sinks: {

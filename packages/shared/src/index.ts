@@ -1,2 +1,2 @@
-export * from './config/economy.js';
+export * from './config/index.js';
 export * from './protocol.js';
