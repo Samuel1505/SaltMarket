@@ -22,6 +22,13 @@ const E = ECONOMY;
 const TPD = E.time.ticksPerDay;
 const SETTLE_EVERY = 6;
 
+type StoredBatch = { batchId: string; tickFrom: number; tickTo: number; deltas: { account: string; token: TokenId; delta: string }[] };
+type Snapshot = {
+  world: WorldState;
+  tokens?: Record<string, string>;
+  /** Settlement cursor and unconfirmed batches (REQUESTS C2). Absent in older snapshots. */
+  ledger?: { lastSettled: [string, string][]; lastSettledTick: number; pending: StoredBatch[]; settlements?: JudgeLedger['settlements'] };
+};
 type FeedRec = { item: Omit<FeedItem, 'mine'>; accountId?: string; private?: boolean };
 type SettlementRec = JudgeLedger['settlements'][number];
 
@@ -54,8 +61,14 @@ export class SimBackend implements GameBackend {
   private prevOfferIds = new Set<string>();
   private removedOfferIds: string[] = [];
   private settlements: SettlementRec[] = [];
+  /** Balances as of the last batch handed to the ledger (the next batch is the difference from these). */
   private lastSettled = new Map<string, bigint>();
-  private queueDepth = 0;
+  /** tickTo of the last batch handed to the ledger; the next batch starts here (contracts require contiguous batches). */
+  private lastSettledTick = 0;
+  /** Batches not yet confirmed by the ledger, oldest first. Sent strictly in order, one at a time. */
+  private pending: { batch: SettlementBatch; resent: boolean }[] = [];
+  private inFlight = false;
+  private stuck: string | null = null;
   private reconciliation: { tick: number | null; mismatches: number } = { tick: null, mismatches: 0 };
   private activeTimelapses = 0;
   private readonly log: (m: string) => void;
@@ -63,6 +76,11 @@ export class SimBackend implements GameBackend {
   constructor(private readonly opts: SimOptions) {
     this.log = opts.log ?? (() => {});
     this.s = this.loadSnapshot() ?? createWorld(opts.seed ?? 42);
+    if (!this.restoredLedgerState) this.lastSettledTick = this.s.tick;
+    // A MemoryLedger lost its state with the process; bring it back to what had been confirmed.
+    // (A real chain keeps its own state; restore() is a no-op there.)
+    this.opts.ledger.restore?.(this.confirmedBalances(), this.lastSettledTick);
+    if (this.pending.length) queueMicrotask(() => this.pump());
     for (const [token, pid] of Object.entries(this.persistedTokens)) this.tokens.set(token, pid);
     this.prevOfferIds = new Set(this.offers(null).map((o) => o.id));
   }
@@ -180,7 +198,7 @@ export class SimBackend implements GameBackend {
 
   health(): Health {
     const st = this.opts.ledger.status();
-    return { ok: true, protocolVersion: PROTOCOL_VERSION, serverMode: 'live', tick: this.s.tick, ledger: { mode: st.mode, health: st.health, queueDepth: this.queueDepth } };
+    return { ok: true, protocolVersion: PROTOCOL_VERSION, serverMode: 'live', tick: this.s.tick, ledger: { mode: st.mode, health: this.stuck ? 'degraded' : st.health, queueDepth: this.pending.length } };
   }
 
   // ───────────── judge / dev ─────────────
@@ -214,9 +232,9 @@ export class SimBackend implements GameBackend {
       };
     });
     return {
-      mode: st.mode, health: st.health, network: st.network, contractId: st.contractId,
+      mode: st.mode, health: this.stuck ? 'degraded' : st.health, network: st.network, contractId: st.contractId,
       contractExplorerUrl: st.contractId ? this.opts.ledger.explorerUrl('account', st.contractId) : null,
-      queueDepth: this.queueDepth, lastSettledTick: this.settlements.find((x) => x.status === 'settled')?.tickTo ?? null,
+      queueDepth: this.pending.length, lastSettledTick: this.settlements.find((x) => x.status === 'settled')?.tickTo ?? null,
       settlements: this.settlements.slice(0, Math.max(1, Math.min(limit, 200))), accounts, reconciliation: this.reconciliation,
     };
   }
@@ -448,41 +466,87 @@ export class SimBackend implements GameBackend {
     return b;
   }
 
+  /**
+   * Build the next batch: net deltas since the last batch, starting exactly where the last one ended.
+   * lastSettled moves forward now; the batch itself waits in `pending` (persisted) until the ledger confirms it,
+   * so a restart neither re-sends old balances (C2) nor loses an unconfirmed batch.
+   */
   private settle(): void {
     const now = this.balances();
     const deltas: SettlementBatch['deltas'] = [];
-    for (const k of new Set([...now.keys(), ...this.lastSettled.keys()])) {
+    for (const k of [...new Set([...now.keys(), ...this.lastSettled.keys()])].sort()) {
       const d = (now.get(k) ?? 0n) - (this.lastSettled.get(k) ?? 0n);
       if (d !== 0n) { const [account, token] = k.split('|') as [string, TokenId]; deltas.push({ account, token, delta: d }); }
     }
+    const tickFrom = this.lastSettledTick;
     const tickTo = this.s.tick;
-    const tickFrom = tickTo - SETTLE_EVERY;
+    if (tickTo <= tickFrom) return;
     const batch: SettlementBatch = { batchId: `${tickFrom}-${tickTo}`, tickFrom, tickTo, deltas };
-    const rec: SettlementRec = { batchId: batch.batchId, tickFrom, tickTo, status: 'queued', deltaCount: deltas.length, attempts: 0 };
-    this.settlements.unshift(rec);
-    if (this.settlements.length > 200) this.settlements.length = 200;
+    this.record(batch);
+    this.pending.push({ batch, resent: false });
     this.lastSettled = now;
-    this.queueDepth += 1;
-    const attempt = () => {
-      rec.attempts += 1;
-      rec.status = 'submitted';
-      this.opts.ledger.settle(batch).then(
-        (r) => {
-          rec.status = 'settled';
-          rec.txHash = r.txHash;
-          const u = this.opts.ledger.explorerUrl('tx', r.txHash);
-          if (u) rec.explorerUrl = u;
-          this.queueDepth -= 1;
-          if (tickTo % TPD === 0) void this.reconcile(now, tickTo);
-        },
-        (err: unknown) => {
+    this.lastSettledTick = tickTo;
+    this.pump();
+  }
+
+  private record(batch: SettlementBatch): SettlementRec {
+    let rec = this.settlements.find((x) => x.batchId === batch.batchId);
+    if (!rec) {
+      rec = { batchId: batch.batchId, tickFrom: batch.tickFrom, tickTo: batch.tickTo, status: 'queued', deltaCount: batch.deltas.length, attempts: 0 };
+      this.settlements.unshift(rec);
+      if (this.settlements.length > 200) this.settlements.length = 200;
+    }
+    return rec;
+  }
+
+  /** Send the oldest pending batch; on success move to the next. One in flight at a time, in order. */
+  private pump(): void {
+    if (this.inFlight || this.stuck) return;
+    const head = this.pending[0];
+    if (!head) return;
+    const rec = this.record(head.batch);
+    this.inFlight = true;
+    rec.attempts += 1;
+    rec.status = 'submitted';
+    this.opts.ledger.settle(head.batch).then(
+      (r) => {
+        this.inFlight = false;
+        if (!r.applied && !head.resent && rec.attempts === 1) {
+          // The ledger says it already had a batch we have never delivered: something else moved its cursor,
+          // or the world was reset against an old ledger. Stop rather than build on a wrong base (C4).
           rec.status = 'failed';
-          rec.error = err instanceof Error ? err.message : String(err);
-          setTimeout(attempt, Math.min(60000, 1000 * 2 ** rec.attempts));
-        },
-      );
-    };
-    attempt();
+          rec.error = 'ALREADY_APPLIED: the ledger already had this batch; settlement stopped, needs a human';
+          this.stuck = `stuck at ${head.batch.batchId}: ALREADY_APPLIED`;
+          this.log(`ledger: ${this.stuck}`);
+          return;
+        }
+        rec.status = 'settled';
+        rec.txHash = r.txHash;
+        delete rec.error;
+        const u = this.opts.ledger.explorerUrl('tx', r.txHash);
+        if (u) rec.explorerUrl = u;
+        this.pending.shift();
+        if (this.pending.length === 0 && head.batch.tickTo % TPD === 0) void this.reconcile(this.lastSettled, head.batch.tickTo);
+        this.pump();
+      },
+      (err: unknown) => {
+        this.inFlight = false;
+        rec.status = 'failed';
+        rec.error = err instanceof Error ? err.message : String(err);
+        // Error classification (retryable vs needs-a-human) lands with NearLedger (REQUESTS C4).
+        setTimeout(() => this.pump(), Math.min(60000, 1000 * 2 ** rec.attempts));
+      },
+    );
+  }
+
+  /** Balances the ledger has confirmed: lastSettled minus everything still pending. */
+  private confirmedBalances(): Map<string, bigint> {
+    const b = new Map(this.lastSettled);
+    for (const { batch } of this.pending) for (const d of batch.deltas) {
+      const k = `${d.account}|${d.token}`;
+      b.set(k, (b.get(k) ?? 0n) - d.delta);
+    }
+    return b;
   }
 
   private async reconcile(expected: Map<string, bigint>, tick: number): Promise<void> {
@@ -497,25 +561,49 @@ export class SimBackend implements GameBackend {
 
   // ───────────── JSON snapshot (replaces SQLite) ─────────────
 
+  private restoredLedgerState = false;
+
   private loadSnapshot(): WorldState | null {
     if (!this.opts.snapshotPath) return null;
+    let data: Snapshot;
     try {
-      const data = JSON.parse(readFileSync(this.opts.snapshotPath, 'utf8')) as { world: WorldState; tokens?: Record<string, string> };
-      assertInvariants(data.world);
-      this.persistedTokens = data.tokens ?? {};
-      this.log(`restored world at tick ${data.world.tick} from ${this.opts.snapshotPath}`);
-      return data.world;
+      data = JSON.parse(readFileSync(this.opts.snapshotPath, 'utf8')) as Snapshot;
     } catch {
       return null;
     }
+    assertInvariants(data.world);
+    this.persistedTokens = data.tokens ?? {};
+    if (data.ledger) {
+      this.lastSettled = new Map(data.ledger.lastSettled.map(([k, v]) => [k, BigInt(v)]));
+      this.lastSettledTick = data.ledger.lastSettledTick;
+      this.pending = data.ledger.pending.map((b) => ({ resent: true, batch: { ...b, deltas: b.deltas.map((d) => ({ ...d, delta: BigInt(d.delta) })) } }));
+      this.settlements = data.ledger.settlements ?? [];
+      this.restoredLedgerState = true;
+      this.log(`restored world at tick ${data.world.tick}; ledger cursor at ${this.lastSettledTick}, ${this.pending.length} batch(es) to resend`);
+    } else {
+      // Older snapshot (or demo:seed output) with no ledger section: nothing has ever been settled from it.
+      // The first batch will carry every balance, which is right only for a ledger that has never seen this world.
+      this.log(`restored world at tick ${data.world.tick}; snapshot has no ledger cursor, so the first batch settles all balances (use a fresh ledger/contract)`);
+    }
+    return data.world;
   }
 
-  /** Atomic write: temp file then rename. Called daily and on shutdown. */
+  /** Atomic write: temp file then rename. Called daily and on shutdown. Includes the ledger cursor (C2). */
   saveSnapshot(): void {
     if (!this.opts.snapshotPath) return;
     mkdirSync(dirname(this.opts.snapshotPath), { recursive: true });
+    const snap: Snapshot = {
+      world: this.s,
+      tokens: this.persistedTokens,
+      ledger: {
+        lastSettled: [...this.lastSettled].map(([k, v]) => [k, v.toString()]),
+        lastSettledTick: this.lastSettledTick,
+        pending: this.pending.map(({ batch }) => ({ ...batch, deltas: batch.deltas.map((d) => ({ ...d, delta: d.delta.toString() })) })),
+        settlements: this.settlements.slice(0, 50),
+      },
+    };
     const tmp = `${this.opts.snapshotPath}.tmp`;
-    writeFileSync(tmp, JSON.stringify({ world: this.s, tokens: this.persistedTokens }));
+    writeFileSync(tmp, JSON.stringify(snap));
     renameSync(tmp, this.opts.snapshotPath);
   }
 
