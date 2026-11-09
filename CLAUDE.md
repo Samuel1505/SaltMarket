@@ -225,3 +225,58 @@ Open questions for the human:
 - Every row of the compliance matrix in `docs/TRACK_BRIEF.md` is DONE (or consciously cut and disclosed).
 - NPC and player balances are mirrored on NEAR testnet and verifiable from the Ledger drawer.
 - README is judge-ready; repo is public before 2026-11-14T23:59Z; demo post is live; submission sent only after human confirmation.
+
+## 14. Backend → frontend interface (read this if you work in `apps/web`)
+
+Maintained by the backend owner's session. The source of truth is `packages/shared/src/protocol.ts` (currently **v0.1.0**); this section is the short version. If they disagree, the file wins.
+
+**Import and versioning**
+- Import schemas and types from `@saltmarket/shared/protocol` (zod schemas with inferred TS types). Economy constants, if you need them, are in `@saltmarket/shared/config`, but prefer the `catalog` the server sends in the snapshot so the UI never hardcodes numbers.
+- Changes are additive only (new fields, new message types). Additive change → minor version bump. A breaking change bumps the major version and the backend owner tells you first.
+- Ignore unknown fields (zod strips them) and unknown WS message types. Error codes, reason codes, feed kinds, and event kinds are plain strings so new values never break the client; render unknown ones generically. Known values are exported as `ERROR_CODES`, `REASON_CODES`, `FEED_KINDS`, `EVENT_KINDS`.
+
+**Money and vocabulary**
+- All money is integer **pips** (1 mark = 100 pips); fields end in `Pips`. Rates end in `Bps` (100 bps = 1%). The client formats marks.
+- Player-facing payloads contain no chain vocabulary. Chain data appears only in the `Judge*` schemas (judge mode only).
+
+**REST** (paths in `ROUTES`)
+- Success: `{ ok: true, data }`. Failure: `{ ok: false, code, message }`; `message` is friendly and can be shown to players as-is.
+- `POST /api/auth/login` `{ provider: 'guest', displayName? }` → `Session { token, playerId, displayName, provider }`. Send `Authorization: Bearer <token>` on later requests.
+- `GET /api/world` → `WorldSnapshot` (`me` is null without a token). `GET /api/npcs`, `GET /api/npcs/:id/explain` (tooltip payload), `GET /api/market/:good/history?days=5&venueId=` (sparklines), `GET /api/leaderboard`, `POST /api/timelapse`, `GET /healthz` (no envelope).
+- Judge only (`JUDGE_MODE=1` on the server and `?judge=1` on the client): `POST /api/dev/event` `{ kind: 'storm' | 'fair_winds' | 'salt_glut' | 'force_broke', npcId? }`, `POST /api/dev/speed` `{ speed?, paused? }`, `GET /api/judge/ledger`.
+
+**WebSocket** (`/ws?token=<token>`; without a token the socket is a read-only spectator and commands get `UNAUTHORIZED`)
+- On connect the server sends `hello`, then a full `snapshot`. Then a stream of `tick`, `delta`, `feed`, `ack`, `timelapse`, `error`, `pong`. After a reconnect expect a fresh `snapshot` (or call `GET /api/world`).
+- Every client message has a client-generated `cmdId` (≤ 64 chars). Each one gets exactly one `ack { cmdId, ok, code?, message, result? }`. Show `message` as the toast in both success and failure. On success, `result` is structured (`trade`, `listed`, `cancelled`, `gathered`, `craft_started`, `stall_upgraded`, `hall_bought`, `hall_fee_set`, `invested`, `timelapse`, `none`), for UI like "+2 fish".
+- Client messages: `buy`, `sell`, `list`, `bid`, `cancel`, `craft`, `upgradeStall`, `buyHall`, `setHallFee`, `gather`, `invest`, `timelapse`, `subscribe` (optional; everything is sent by default), `ping`.
+- Render trades from acks and deltas, not optimistically. Optimistic UI is fine for button states only.
+
+**Applying a `delta`** (`{ t: 'delta', tick, changes }`)
+- `clock`, `me`, `ship`, `town`, `events`: replace wholesale when present.
+- `venues` (key `id`), `quotes` (key `venueId:good`), `npcs` (key `id`), `nodes` (key `id`), `offers` (key `id`): upsert.
+- `removedOfferIds`: delete those offers.
+- Feed items arrive separately as `{ t: 'feed', items }`, newest first; `notable: true` means toast-worthy, `mine: true` concerns the signed-in player, `repeat` is the ×N collapse count.
+
+**Market model (decided 2026-11-09)**
+- Harbor Market: merchants post **buy offers** (Smokehouse buys fish and salt, Cooper buys timber, etc.) and sellers post asks. `sell` = sell now into the best buy offer (optional `minPricePips`); `buy` = buy now from the best ask (optional `maxPricePips`); `list` = post your own resting ask. This is what makes the gather → sell first trade work in about 60 s.
+- Exchange Halls (`hall-<n>`): order books; `bid` posts a resting buy offer (halls only). Venue fees are in `Venue.feeBps`, `taxBps`, `frictionBps`.
+- `Quote` = top of book + trend per venue/good, with an optional `trendReason` for price tooltips ("Fish ▲ 12%: storm reduced the catch").
+
+**Tooltips and NPC cards (track requirement)**
+- `NpcCard.reasoning` is the current headline: `text` (one line), `detail` (key factors, e.g. "Stock 3 of 14, sold 9 in the last day, margin 16%"), and structured `factors`. `recent` holds the last 5 decisions. Merchant `Offer`s carry their own `reason`.
+- `status: 'closed'` comes with `closed { investMinPips, investMaxPips, rescueInTicks }`: show "Closed: needs investment" and the Invest action only then. `investor` is present while someone holds a stake.
+- `GET /api/npcs/:id/explain` returns the full tooltip, including per-good price reasons and `rulesFile` (the path to the one readable rules file, for judges).
+
+**Gameplay values the UI shows**
+- Gather: `me.gather.readyAtTick` (can gather when `clock.tick >= readyAtTick`), `gatheredToday` / `dailyCap` (counts units). Nodes give `yieldNow` (2, 1 or 0) and `gatherers24h` (crowding).
+- Ship: `ship.status`, `ticksToArrival` / `ticksToDeparture`, `ceilingPips`, `volume` / `filled`. In a fresh world the first ship docks at about 50 s (tick 20).
+- Clock: interpolate with `clock.realMsPerTick` and `speed`, but never drive game logic from the client clock.
+- Closure feed kinds: `MERCHANT_CLOSED`, `MERCHANT_REOPENED`, `MERCHANT_RESCUED`.
+
+**Time-lapse ("Watch a week")**
+- Start with WS `{ t: 'timelapse', action: 'start', days?, wallSeconds?, shocks? }` or `POST /api/timelapse`. Frames arrive on your socket as `timelapse` messages with `phase: 'started' | 'frame' | 'done' | 'stopped'`; a frame comes every 6 game ticks, about 60 s for 168 ticks. `done` includes a `summary`. It never changes the live world.
+- Shocks: `{ kind: 'storm', day }`, `{ kind: 'flood', good, qty, day }`, `{ kind: 'close_merchant', npcId?, day, investDay? }`.
+
+**Mock server**
+- `pnpm dev:mock` serves scripted, protocol-valid data on the same endpoints (ticking clock, price changes, NPC reasoning, one closed merchant, a Storm, a ship arrival, feed items, plausible acks and errors). Switching to the real sim later needs no client changes. Target: real sim behind the same endpoints by the evening of Nov 10.
+- Need a protocol change? Write a request to the backend owner (what and why); don't edit `packages/shared`.
