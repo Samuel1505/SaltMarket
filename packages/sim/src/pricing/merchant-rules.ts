@@ -40,6 +40,8 @@ type MerchantRule = {
   targetStock: number;
   /** Units produced per day at normal prices (producers only). */
   baseOutputPerDay: number;
+  /** Units it expects to sell on a normal day: spreads its daily costs, and is the yardstick for "selling fast". */
+  expectedDailySales: number;
   /** Fishing is weather-sensitive; storms cut the catch. */
   weatherSensitive: boolean;
   /** Woodcutters stop cutting when timber is too cheap, and restart when it recovers. */
@@ -48,11 +50,11 @@ type MerchantRule = {
 };
 
 export const MERCHANT_RULES: Record<Exclude<Archetype, 'captain'>, MerchantRule> = {
-  fisherman: { sells: ['fish'], buys: {}, targetStock: E.npcs.fisherman.targetStock, baseOutputPerDay: E.npcs.fisherman.baseOutputPerDay, weatherSensitive: true },
-  salt_panner: { sells: ['salt'], buys: {}, targetStock: E.npcs.salt_panner.targetStock, baseOutputPerDay: E.npcs.salt_panner.baseOutputPerDay, weatherSensitive: false },
-  woodcutter: { sells: ['timber'], buys: {}, targetStock: E.npcs.woodcutter.targetStock, baseOutputPerDay: E.npcs.woodcutter.baseOutputPerDay, weatherSensitive: false, pauseBelowAnchorRatio: 0.6, resumeAboveAnchorRatio: 0.75 },
-  cooper: { sells: ['barrel'], buys: { ...E.npcs.cooper.inputTargets }, targetStock: E.npcs.cooper.targetStock, baseOutputPerDay: 0, weatherSensitive: false },
-  smokehouse: { sells: ['cured_fish'], buys: { ...E.npcs.smokehouse.inputTargets }, targetStock: E.npcs.smokehouse.targetStock, baseOutputPerDay: 0, weatherSensitive: false },
+  fisherman: { sells: ['fish'], buys: {}, targetStock: E.npcs.fisherman.targetStock, baseOutputPerDay: E.npcs.fisherman.baseOutputPerDay, expectedDailySales: E.npcs.fisherman.baseOutputPerDay, weatherSensitive: true },
+  salt_panner: { sells: ['salt'], buys: {}, targetStock: E.npcs.salt_panner.targetStock, baseOutputPerDay: E.npcs.salt_panner.baseOutputPerDay, expectedDailySales: E.npcs.salt_panner.baseOutputPerDay, weatherSensitive: false },
+  woodcutter: { sells: ['timber'], buys: {}, targetStock: E.npcs.woodcutter.targetStock, baseOutputPerDay: E.npcs.woodcutter.baseOutputPerDay, expectedDailySales: E.npcs.woodcutter.baseOutputPerDay, weatherSensitive: false, pauseBelowAnchorRatio: 0.6, resumeAboveAnchorRatio: 0.75 },
+  cooper: { sells: ['barrel'], buys: { ...E.npcs.cooper.inputTargets }, targetStock: E.npcs.cooper.targetStock, baseOutputPerDay: 0, expectedDailySales: E.npcs.cooper.expectedDailySales, weatherSensitive: false },
+  smokehouse: { sells: ['cured_fish'], buys: { ...E.npcs.smokehouse.inputTargets }, targetStock: E.npcs.smokehouse.targetStock, baseOutputPerDay: 0, expectedDailySales: E.npcs.smokehouse.expectedDailySales, weatherSensitive: false },
 };
 
 export const sellsOf = (a: Archetype): Good[] => (a === 'captain' ? [] : MERCHANT_RULES[a].sells);
@@ -68,13 +70,15 @@ export type AskInput = {
   patience: number;
   /** Units this merchant sold in the last day. */
   soldLastDay: number;
-  /** Cost of making one unit from current input prices (crafters) — producers use the anchor. */
+  /** Materials cost of one unit at current input prices (crafters; producers have none). */
   unitCost?: number;
   /** Price posted last tick, for patience smoothing. */
   previous?: number;
   stormActive: boolean;
   /** Smokehouse only: the Captain's current ceiling. */
   captainCeiling?: number;
+  /** Best standing buy offer from someone else for this good (what buyers will pay right now). */
+  bestBid?: number;
 };
 export type PriceDecision = { price: number; reason: Reason };
 
@@ -82,18 +86,24 @@ export function askPrice(i: AskInput, tick: number): PriceDecision {
   const rule = MERCHANT_RULES[i.archetype];
   const anchor = E.goods[i.good].anchor;
   const target = rule.targetStock;
-  // Cost of one unit: producers use a share of the usual price; crafters use live input prices.
-  const cost = i.unitCost ?? anchor * E.producerCostOfAnchor;
+  // Cost of one unit (§8.1 cost_basis): materials at live prices plus this unit's share of the
+  // merchant's daily living cost and upkeep, spread over what it expects to sell in a day.
+  const dailyCosts = E.sinks.npcLivingCostPerDay + E.npcs[i.archetype].upkeepPerDay;
+  const cost = (i.unitCost ?? 0) + dailyCosts / rule.expectedDailySales;
   // Positive when stock is below target (scarce → raise), negative when above.
   const stockPressure = (target - i.stock) / target;
   // Positive when selling faster than a normal day (one target's worth), negative when slower.
-  const expected = Math.max(1, rule.baseOutputPerDay || target / 2);
+  const expected = Math.max(1, rule.expectedDailySales);
   const demandPressure = clamp(i.soldLastDay / expected - 1, P.demandPressureClamp[0], P.demandPressureClamp[1]);
   const normal = cost * (1 + i.margin);
   let raw = normal * (1 + P.kStock * stockPressure) * (1 + P.kDemand * demandPressure);
   // Too much on hand: spoilage punishes hoarding, so discount up to 15%.
   const excess = i.stock > P.excessStockMultiple * target;
   if (excess) raw *= 1 - Math.min(P.excessStockMaxDiscount, ((i.stock - P.excessStockMultiple * target) / target) * 0.1 + 0.05);
+  // Don't sell far below what buyers are openly bidding (tuning L3): surplus goes to the producer, not the middleman.
+  const bidFloor = i.bestBid ? i.bestBid * E.askOfBestBid : 0;
+  const followsBid = bidFloor > raw && !excess;
+  if (followsBid) raw = bidFloor;
   // The Smokehouse knows what the ship pays and prices just under the Captain's ceiling.
   if (i.archetype === 'smokehouse' && i.captainCeiling) raw = Math.max(normal, i.captainCeiling * E.smokehouseAskOfCeiling);
   const clamped = clamp(raw, P.askClampAnchor[0] * anchor, P.askClampAnchor[1] * anchor);
@@ -104,6 +114,7 @@ export function askPrice(i: AskInput, tick: number): PriceDecision {
     { key: 'stock', label: 'Stock', value: i.stock, unit: 'count', of: target },
     { key: 'soldLastDay', label: 'Sold in the last day', value: i.soldLastDay, unit: 'count' },
     { key: 'margin', label: 'Margin', value: Math.round(i.margin * 100), unit: 'pct' },
+    { key: 'unitCost', label: 'Cost per unit', value: Math.round(cost), unit: 'pips' },
   ];
   // First matching condition picks the sentence (NPC_AGENTS §5.1).
   const g = NAME[i.good];
@@ -112,6 +123,7 @@ export function askPrice(i: AskInput, tick: number): PriceDecision {
   if (i.stormActive && rule.weatherSensitive) { code = 'STORM_SUPPLY_CUT'; text = `Storm kept the boats in. Stock is low, raising my price ${Math.max(0, pctVsNormal)}%.`; }
   else if (excess) { code = 'EXCESS_STOCK_DISCOUNT'; text = `Too much ${g} on hand, discounting ${Math.max(0, -pctVsNormal)}%.`; }
   else if (i.stock < 0.5 * target && pctVsNormal > 0) { code = 'LOW_STOCK_RAISE_ASK'; text = `${Cap(i.good)} is scarce, raising my price ${pctVsNormal}%.`; }
+  else if (followsBid && pctVsNormal > 0) { code = 'DEMAND_UP_RAISE_ASK'; text = `Buyers are bidding up to ${fmt(i.bestBid ?? 0)} marks for ${g}. Raising my price ${pctVsNormal}%.`; factors.push({ key: 'bestBid', label: 'Best buy offer', value: i.bestBid ?? 0, unit: 'pips' }); }
   else if (demandPressure > 0.3 && pctVsNormal > 0) { code = 'DEMAND_UP_RAISE_ASK'; text = `${Cap(i.good)} is selling fast, nudging my price up ${pctVsNormal}%.`; }
   else if (pctVsNormal < -5) { code = 'EXCESS_STOCK_DISCOUNT'; text = `${Cap(i.good)} is slow to sell, discounting ${-pctVsNormal}%.`; }
   else if (i.archetype === 'smokehouse' && i.captainCeiling) { code = 'SHIP_NEAR_HOLD_STOCK'; text = `Pricing cured fish just under the Captain's ${fmt(i.captainCeiling)} marks.`; }
@@ -155,8 +167,13 @@ export function bidPrice(i: BidInput, tick: number): BidDecision {
     maxBid = (batch - (others[i.good] ?? 0)) / (per[i.good] ?? 1);
   }
   const glut = clamp(i.glutRatio, P.glutClamp[0], P.glutClamp[1]);
-  let bid = maxBid * (1 - i.margin) * (1 - P.kGlut * glut);
+  // Tuning L4: bid near the going price, more when short of stock, less when full; never above break-even.
+  const need = target > 0 ? clamp((target - i.stock) / target, -1, 1) : 0;
+  const market = m[i.good] * (1 + E.bidNeedPremium * need);
+  let bid = Math.min(maxBid * (1 - i.margin), market) * (1 - P.kGlut * glut);
+  // Tuning L14: bids live in the same 0.5×–2.5× band as asks (a flood can make goods cheap, not free).
   bid = Math.min(bid, P.askClampAnchor[1] * E.goods[i.good].anchor);
+  if (bid > 0) bid = Math.max(bid, P.askClampAnchor[0] * E.goods[i.good].anchor);
   const price = Math.max(0, Math.round(smooth(i.previous, bid, i.patience)));
   const marginPct = Math.round((1 - (i.previous ?? price) / Math.max(1, maxBid)) * 100);
   const factors: Factor[] = [
@@ -165,7 +182,7 @@ export function bidPrice(i: BidInput, tick: number): BidDecision {
     { key: 'margin', label: 'Margin', value: Math.round(i.margin * 100), unit: 'pct' },
   ];
   const g = NAME[i.good];
-  if (maxBid <= 0 || price <= 0) {
+  if (maxBid <= P.askClampAnchor[0] * E.goods[i.good].anchor || price <= 0) {
     return { price: 0, qty: 0, standingQty: 0, paused: true, reason: reason('MARGIN_NEGATIVE_PAUSE_BUY', `${i.archetype === 'smokehouse' ? 'Curing' : 'Barrel-making'} isn't profitable at current prices. Pausing ${g} purchases.`, factors, tick) };
   }
   if (i.archetype === 'smokehouse' && marginPct < 8 && i.good === 'fish') {
@@ -188,10 +205,14 @@ export type OutputInput = {
   /** Extra multiplier from events such as a salt glut (+60%). */
   eventFactor: number;
   pausedLowPrice: boolean;
+  /** Units on hand, including those listed for sale. */
+  stock: number;
 };
 export function dailyOutput(i: OutputInput): number {
   if (i.pausedLowPrice) return 0;
   const rule = MERCHANT_RULES[i.archetype];
+  // Tuning L11: a full shed means no more production; otherwise the excess-stock discount drags the price below cost.
+  if (i.stock >= E.productionStopOfTarget * rule.targetStock) return 0;
   const good = rule.sells[0]!;
   const ratio = i.medianPrice / E.goods[good].anchor;
   const rate = clamp(Math.pow(ratio, E.elasticity), E.rateFactorClamp[0], E.rateFactorClamp[1]);
@@ -217,6 +238,14 @@ export const lowPriceReason = (good: Good, paused: boolean, tick: number): Reaso
 
 // ─── 5. The Captain's ceiling (§7) ────────────────────────────────────────────────────────────
 
+/** Tuning L15: the Captain's order size follows supply: a hold filled fast brings a bigger order, a thin one a smaller order. */
+export function captainVolume(volume: number, filled: number, filledFast: boolean): number {
+  const c = E.captain;
+  if (filledFast) return Math.min(c.maxVolume, volume + c.volumeStep);
+  if ((volume - filled) / volume >= c.unfilledRaiseThresholdBps / 10000) return Math.max(c.minVolume, volume - c.volumeStep);
+  return volume;
+}
+
 export function captainCeiling(current: number, filled: number, volume: number, filledFast: boolean, tick: number): PriceDecision {
   const c = E.captain;
   const unfilledBps = Math.round(((volume - filled) / volume) * 10000);
@@ -231,6 +260,10 @@ export function captainCeiling(current: number, filled: number, volume: number, 
     next = Math.max(c.minCeiling, Math.round((current * (10000 - c.lowerBps)) / 10000));
     code = 'CAPTAIN_CEILING_LOWER';
     text = `Filled my hold fast. Lowering my ceiling to ${fmt(next)} marks.`;
+  } else if (filled >= volume) {
+    next = Math.max(c.minCeiling, Math.round((current * (10000 - c.fullFillLowerBps)) / 10000));
+    code = 'CAPTAIN_CEILING_LOWER';
+    text = `Got all ${volume} cured fish I wanted. Easing my ceiling to ${fmt(next)} marks.`;
   }
   return { price: next, reason: reason(code, text, [{ key: 'ceiling', label: 'Ceiling', value: next, unit: 'pips' }, { key: 'filled', label: 'Bought this visit', value: filled, unit: 'count', of: volume }], tick) };
 }

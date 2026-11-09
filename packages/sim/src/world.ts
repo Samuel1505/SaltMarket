@@ -11,7 +11,7 @@ export function createWorld(seed: number): WorldState {
     version: 1, seed, rngState: seed >>> 0, tick: 0, seq: 0,
     accounts: {}, players: {}, npcs: {}, orders: {}, halls: {},
     nodes: Object.fromEntries(GATHER_NODES.map((n) => [n, E.gather.nodes[n].cap])) as WorldState['nodes'],
-    ship: { visit: 0, docked: false, arrivalTick: E.captain.firstArrivalTick, departureTick: E.captain.firstArrivalTick + E.captain.dockTicks, volume: E.captain.volume, filled: 0, smokehouseSold: 0, filledAtTick: null, ceiling: E.captain.startCeiling, reason: { code: "STEADY", text: "Sailing for Saltmarket. I pay up to 60 marks a cured fish.", factors: [], tick: 0 } },
+    ship: { visit: 0, docked: false, arrivalTick: E.captain.firstArrivalTick, departureTick: E.captain.firstArrivalTick + E.captain.dockTicks, volume: E.captain.volume, baseVolume: E.captain.volume, filled: 0, smokehouseSold: 0, filledAtTick: null, ceiling: E.captain.startCeiling, reason: { code: "STEADY", text: "Sailing for Saltmarket. I pay up to 50 marks a cured fish.", factors: [], tick: 0 } },
     events: [],
     supply: { genesis: 0, minted: 0, burned: 0 },
     goods: { initial: emptyInv(), created: emptyInv(), destroyed: emptyInv() },

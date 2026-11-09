@@ -45,8 +45,8 @@ export function runNpc(s: WorldState, npc: Npc, ev: SimEvent[]): void {
   // Produce (fisherman, salt-panner, woodcutter): ECONOMY §8.3, spread over the day.
   if (a === 'fisherman' || a === 'salt_panner' || a === 'woodcutter') {
     const good = rule.sells[0]!;
-    if (held(good) < 3 * rule.targetStock) {
-      const perDay = dailyOutput({ archetype: a, medianPrice: median[good], weatherFactor: weatherFactor(s), eventFactor: a === 'salt_panner' && isActive(s, 'salt_glut') ? 1.6 : 1, pausedLowPrice: npc.prodPaused });
+    {
+      const perDay = dailyOutput({ archetype: a, medianPrice: median[good], weatherFactor: weatherFactor(s), eventFactor: a === 'salt_panner' && isActive(s, 'salt_glut') ? 1.6 : 1, pausedLowPrice: npc.prodPaused, stock: held(good) });
       npc.prodCarry += Math.round((perDay * 1000) / E.time.ticksPerDay);
       const whole = Math.floor(npc.prodCarry / 1000);
       if (whole > 0) { createGood(s, npc.id, good, whole); npc.prodCarry -= whole * 1000; }
@@ -98,7 +98,8 @@ export function runNpc(s: WorldState, npc: Npc, ev: SimEvent[]): void {
     const unitCost = a === 'cooper' ? 3 * median.timber : a === 'smokehouse' ? (6 * median.fish + 3 * median.salt + median.barrel) / 4 : undefined;
     // The Smokehouse holds cured fish for the ship: list only while it is docked or due within 12 ticks.
     const shipNear = s.ship.docked || s.ship.arrivalTick - s.tick <= 12;
-    const d = askPrice({ archetype: a, good, stock, margin: pers.margin, patience: pers.patience, soldLastDay: soldBy(s, npc.id, good), previous: npc.lastPrice[`${good}:sell`], stormActive: isActive(s, 'storm'), ...(unitCost !== undefined ? { unitCost } : {}), ...(a === 'smokehouse' ? { captainCeiling: s.ship.ceiling } : {}) }, s.tick);
+    const bestBid = Object.values(s.orders).filter((o) => o.side === 'buy' && o.good === good && o.owner !== npc.id).reduce((m, o) => Math.max(m, o.price), 0);
+    const d = askPrice({ archetype: a, good, stock, ...(bestBid > 0 && a !== 'smokehouse' ? { bestBid } : {}), margin: pers.margin, patience: pers.patience, soldLastDay: soldBy(s, npc.id, good), previous: npc.lastPrice[`${good}:sell`], stormActive: isActive(s, 'storm'), ...(unitCost !== undefined ? { unitCost } : {}), ...(a === 'smokehouse' ? { captainCeiling: s.ship.ceiling } : {}) }, s.tick);
     npc.lastPrice[`${good}:sell`] = d.price;
     reasons.unshift(d.reason);
     const listQty = a === 'smokehouse' && !shipNear ? 0 : guardSell(npc, good, stock);

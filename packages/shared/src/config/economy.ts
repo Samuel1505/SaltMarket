@@ -54,8 +54,8 @@ export const ECONOMY = {
   sinks: {
     stallRentPerDay: m(15),
     hallLicense: m(400),
-    npcLivingCostPerDay: m(15),
-    demurrage: { thresholdPips: m(1000), bpsPerDay: 50 },
+    npcLivingCostPerDay: m(20), // Tuning L9: was 15
+    demurrage: { thresholdPips: m(300), bpsPerDay: 300 }, // Tuning L8 → L10: was 1000 marks / 0.5%, then 500 / 1.5%
   },
 
   // §7 — Captain. Approved loop: the first ship docks ~50 s into a fresh world (tick 20 at 2.5 s/tick).
@@ -64,17 +64,26 @@ export const ECONOMY = {
     everyTicks: 48,
     dockTicks: 12,
     volume: 16,
-    startCeiling: m(60),
+    startCeiling: m(50), // Tuning L7: was 60
     minCeiling: m(35),
     maxCeiling: m(90),
     fastFillTicks: 6, // filled within this many ticks → ceiling −5%
     lowerBps: 500,
+    // Tuning L6: a visit that fills completely (not fast) still eases the ceiling a little.
+    fullFillLowerBps: 300,
+    // Tuning L15: order size moves by volumeStep per visit within [minVolume, maxVolume].
+    volumeStep: 2,
+    minVolume: 12,
+    maxVolume: 24, // Tuning L16: was 32
     unfilledRaiseThresholdBps: 2500, // ≥ 25% unfilled → ceiling +10%
     raiseBps: 1000,
+    // Tuning L1: the Smokehouse may fill unmet demand in the last N docked ticks (players keep priority before that).
+    smokehouseLateFillTicks: 3,
   },
 
   // §5 — Town Fund recycles harbor tax; balance above the cap is burned weekly.
-  townFund: { balanceCap: m(5000), startBalance: m(1000) },
+  townFund: { balanceCap: m(1500), // Tuning L13: was 5000
+    startBalance: m(1000) },
 
   // NPC_AGENTS §6 — spending guard, derived per NPC from its start cash and daily costs.
   npcPolicy: { cashFloorDays: 3, maxSpendPerDayOfStartCash: 0.8, maxSpendPerTradeOfStartCash: 0.3, maxOrderQty: 20 },
@@ -83,8 +92,12 @@ export const ECONOMY = {
   priceSmoothing: 0.9,
   // Smokehouse sells cured fish at this share of the Captain ceiling (it knows what the ship pays).
   smokehouseAskOfCeiling: 0.92,
-  // Producer unit cost as a share of anchor (ECONOMY §8.1 cost_basis).
-  producerCostOfAnchor: 0.85,
+  // Tuning L11: producers stop producing at this multiple of target stock.
+  productionStopOfTarget: 1.5,
+  // Tuning L4: buyers bid the recent median × (1 + this × stock shortfall), capped at break-even.
+  bidNeedPremium: 0.2,
+  // Tuning L3: a seller asks at least this share of the best standing bid for its good.
+  askOfBestBid: 0.97,
   // Time-lapse "flood" shock: a bot dumps goods at this share of anchor.
   floodPriceOfAnchor: 0.6,
 
@@ -131,15 +144,16 @@ export const ECONOMY = {
 
   // §4 + §5 — NPC roster seed values and daily upkeep.
   npcs: {
-    fisherman: { count: 3, startCash: m(200), startInventory: { fish: 10 }, baseOutputPerDay: 8, upkeepPerDay: m(20), targetStock: 12 },
-    salt_panner: { count: 2, startCash: m(150), startInventory: { salt: 12 }, baseOutputPerDay: 6, upkeepPerDay: m(12), targetStock: 14 },
-    woodcutter: { count: 2, startCash: m(150), startInventory: { timber: 15 }, baseOutputPerDay: 10, upkeepPerDay: m(12), targetStock: 15 },
-    cooper: { count: 1, startCash: m(300), startInventory: { timber: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(10), targetStock: 4, inputTargets: { timber: 6 } },
+    fisherman: { count: 3, startCash: m(200), startInventory: { fish: 10 }, baseOutputPerDay: 5, upkeepPerDay: m(20), targetStock: 12 },
+    salt_panner: { count: 2, startCash: m(150), startInventory: { salt: 12 }, baseOutputPerDay: 4, upkeepPerDay: m(12), targetStock: 14 },
+    woodcutter: { count: 2, startCash: m(150), startInventory: { timber: 15 }, baseOutputPerDay: 4, upkeepPerDay: m(12), targetStock: 15 },
+    cooper: { count: 1, startCash: m(300), startInventory: { timber: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(10), targetStock: 4, inputTargets: { timber: 6 }, expectedDailySales: 2 },
     // Approved loop: the Smokehouse sells at most ~half the Captain's order per visit, leaving room for players.
     smokehouse: {
-      count: 1, startCash: m(600), startInventory: { fish: 10, salt: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(15), targetStock: 8,
+      count: 1, startCash: m(600), startInventory: { fish: 10, salt: 6, barrel: 2, cured_fish: 8 }, baseOutputPerDay: 0, upkeepPerDay: m(15), targetStock: 8,
       maxCuredSellPerVisit: 8,
       inputTargets: { fish: 12, salt: 6, barrel: 2 },
+      expectedDailySales: 8,
     },
   },
 

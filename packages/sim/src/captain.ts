@@ -2,7 +2,7 @@
 // fish at or under his ceiling with minted marks, then adjusts the ceiling by how the visit went.
 import { ECONOMY } from '@saltmarket/shared/config';
 import { executeTrade, book } from './market.js';
-import { captainCeiling } from './pricing/merchant-rules.js';
+import { captainCeiling, captainVolume } from './pricing/merchant-rules.js';
 import { isActive } from './events.js';
 import { CAPTAIN, type SimEvent, type WorldState } from './types.js';
 
@@ -15,7 +15,7 @@ export function shipArrives(s: WorldState, ev: SimEvent[]): void {
   sh.filled = 0;
   sh.smokehouseSold = 0;
   sh.filledAtTick = null;
-  sh.volume = isActive(s, 'fair_winds') ? Math.round(E.captain.volume * 1.5) : E.captain.volume;
+  sh.volume = isActive(s, 'fair_winds') ? Math.round(sh.baseVolume * 1.5) : sh.baseVolume;
   ev.push({ kind: 'ship_docked', text: `the Gull has docked. Captain Maren is buying up to ${sh.volume} cured fish at ${sh.ceiling / 100} marks or less.`, notable: true, npcId: CAPTAIN, good: 'cured_fish' });
 }
 
@@ -26,7 +26,9 @@ export function captainBuys(s: WorldState): void {
   for (const o of book(s, 'any', 'cured_fish', 'sell')) {
     if (sh.filled >= sh.volume || o.price > sh.ceiling) break;
     let n = Math.min(o.qty, sh.volume - sh.filled);
-    if (o.owner === 'smokehouse') n = Math.min(n, E.npcs.smokehouse.maxCuredSellPerVisit - sh.smokehouseSold);
+    // The Smokehouse supplies at most half the order, except in the last hours of the visit when it may fill what players left.
+    const lateFill = sh.departureTick - s.tick <= E.captain.smokehouseLateFillTicks;
+    if (o.owner === 'smokehouse' && !lateFill) n = Math.min(n, E.npcs.smokehouse.maxCuredSellPerVisit - sh.smokehouseSold);
     if (n <= 0) continue;
     executeTrade(s, { buyer: CAPTAIN, seller: o.owner, good: 'cured_fish', qty: n, price: o.price, venueId: o.venueId, sellEscrow: true });
     o.qty -= n;
@@ -45,6 +47,7 @@ export function shipDeparts(s: WorldState, ev: SimEvent[]): void {
   const before = sh.ceiling;
   sh.ceiling = d.price;
   sh.reason = d.reason;
+  sh.baseVolume = captainVolume(sh.baseVolume, sh.filled, fast);
   sh.docked = false;
   sh.visit += 1;
   sh.arrivalTick += E.captain.everyTicks;
