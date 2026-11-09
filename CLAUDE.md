@@ -191,20 +191,17 @@ Loop approved:    2026-11-09
   (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
   visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
   MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
-Phase:            4 (NEAR) code complete on the server side; not yet run against the live contract.
+Phase:            4 (NEAR) LIVE on testnet since 2026-11-09.
 Last session:     2026-11-09
-What works:       Everything in Phase 1–3 (sim, tuning, scenarios, mock + live servers, conformance on both).
-                  NearLedger (near-api-js 7.4.0): net deltas → mints/transfers/burns, sim id → NEAR id mapping,
-                  retryable vs fatal errors (fatal stops settlement and shows "stuck at …"), parts for big
-                  windows, empty windows skipped, contract cursor checked on boot (refuses a used contract for a
-                  never-settled world). Tested against a model of the contract (52 tests); read-only views
-                  checked live (cursor empty, 0 batches, 207 accounts affordable). Settlement cursor persisted
-                  (C2). Privy social login, server half (ES256 token check, stable player mapping). Per-venue
-                  price history. README draft.
+What works:       Everything in Phase 1–3, plus live settlement: the demo world (pnpm demo:seed) runs from
+                  ~/Desktop/dev/saltmarket-backend (worktree on backend/foundation, .env symlinked) with
+                  LEDGER=near. First batch 72-96 applied to goods.samuelowen.testnet in tx
+                  3P2frBFCJFAVwQJ1gZKWsdsTXiPf4TwttEjMcmLgqZQf; reconciliation at tick 96: 0 mismatches.
+                  Gas: ~0.0014 NEAR per daily batch → the 1 NEAR key allowance lasts ~12 h of continuous play.
+                  Privy social login (app id + secret, SDK mode) configured.
 In progress:      —
-Next up:          (human) First live run: `pnpm dev:chain` with .env pointing NEAR_AUTHORITY_KEY_FILE at the
-                  function-call key file, on a FRESH world (delete data/world.json first). Then the frontend wires
-                  Privy (needs PRIVY_APP_ID plus PRIVY_VERIFICATION_KEY or PRIVY_APP_SECRET in the server's .env).
+Next up:          Keep THIS world (data/world.json in saltmarket-backend) for the demo: the contract cursor is
+                  now tied to it. Frontend wires Privy + the Ledger drawer. Add sample tx hash to README.
 Known issues:     5 always-on bot players break the money checks (gather cap decision pending). Storm → Captain
                   short visit is seed-dependent (2 of 10). Explorer links off until URL templates are checked.
                   NPC sub-accounts are balance entries on the contract, not created NEAR accounts.

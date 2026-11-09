@@ -66,7 +66,7 @@ Tuning history, one lever at a time: [`docs/TUNING_LOG.md`](docs/TUNING_LOG.md).
 - `pnpm near:check --contract goods.samuelowen.testnet --authority samuelowen.testnet` reads the contract's status, settlement cursor, and storage. It signs nothing.
 - The Ledger drawer (`?judge=1`, or `GET /api/judge/ledger` on a `JUDGE_MODE=1` server) lists recent settlement batches, their status, and per-account balances in the sim vs on the ledger.
 
-<!-- after the first live run: add sample settle tx hashes and the explorer link (testnet explorer: https://testnet.nearblocks.io) -->
+- First live settlement (demo world, batch `72-96`, 33 balance changes): tx `3P2frBFCJFAVwQJ1gZKWsdsTXiPf4TwttEjMcmLgqZQf` on testnet (explorer: https://testnet.nearblocks.io). After it, every sim balance matched the contract (reconciliation: 0 mismatches).
 
 ## Architecture in brief
 
