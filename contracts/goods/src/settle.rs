@@ -17,10 +17,10 @@
 //!    can go negative; if any op fails the whole part reverts and nothing is applied.
 
 use near_sdk::json_types::U128;
-use near_sdk::{env, near, require, AccountId};
+use near_sdk::{AccountId, env, near, require};
 
 use crate::events::{
-    push_owner_entry, push_pair_entry, GameEvent, MtBurnLog, MtEvent, MtMintLog, MtTransferLog, SettleLog,
+    GameEvent, MtBurnLog, MtEvent, MtMintLog, MtTransferLog, SettleLog, push_owner_entry, push_pair_entry,
 };
 use crate::*;
 
@@ -110,7 +110,7 @@ impl Goods {
             .unwrap_or_else(|| env::panic_str("ERR_BAD_BATCH_ID: expected \"{tickFrom}-{tickTo}\""));
         let part = batch.part.unwrap_or(0);
         let parts = batch.parts.unwrap_or(1);
-        require!(parts >= 1 && parts <= MAX_PARTS, "ERR_BAD_PARTS");
+        require!((1..=MAX_PARTS).contains(&parts), "ERR_BAD_PARTS");
         require!(part < parts, "ERR_BAD_PART");
 
         let result = |s: &Self, applied: bool| SettleResult {
@@ -161,13 +161,8 @@ impl Goods {
             self.cursor.in_progress = None;
             self.cursor.batches_applied += 1;
         } else {
-            self.cursor.in_progress = Some(InProgress {
-                batch_id: batch.batch_id.clone(),
-                tick_from,
-                tick_to,
-                next_part: part + 1,
-                parts,
-            });
+            self.cursor.in_progress =
+                Some(InProgress { batch_id: batch.batch_id.clone(), tick_from, tick_to, next_part: part + 1, parts });
         }
 
         // Events: at most four log lines, measured against the receipt's log budget before logging.
@@ -221,7 +216,9 @@ impl Goods {
         let total: usize = lines.iter().map(String::len).sum();
         require!(
             total <= MAX_TOTAL_LOG_BYTES,
-            format!("ERR_BATCH_TOO_LARGE: events need {total} bytes of logs (max {MAX_TOTAL_LOG_BYTES}), split into parts")
+            format!(
+                "ERR_BATCH_TOO_LARGE: events need {total} bytes of logs (max {MAX_TOTAL_LOG_BYTES}), split into parts"
+            )
         );
         for l in &lines {
             env::log_str(l);

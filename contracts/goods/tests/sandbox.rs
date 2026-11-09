@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use near_api::{AccountId, Contract, NearGas, NearToken, NetworkConfig, Signer};
-use near_sdk::serde_json::{json, Value};
+use near_sdk::serde_json::{Value, json};
 
 const TGAS_300: u64 = 300;
 
@@ -28,7 +28,13 @@ async fn create(sandbox: &near_sandbox::Sandbox, name: &str) -> testresult::Test
 
 impl Env {
     /// Calls `method` as `who` with `yocto` attached. Returns Ok(logs, gas, return json) or Err(error text).
-    async fn call(&self, who: &AccountId, method: &str, args: Value, yocto: u128) -> Result<(Vec<String>, NearGas, Value), String> {
+    async fn call(
+        &self,
+        who: &AccountId,
+        method: &str,
+        args: Value,
+        yocto: u128,
+    ) -> Result<(Vec<String>, NearGas, Value), String> {
         let r = self
             .contract
             .call_function(method, args)
@@ -122,7 +128,11 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
         .await?;
     assert_eq!(res["applied"], true);
     assert_eq!(res["complete"], true);
-    assert!(logs[0].starts_with(r#"EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_mint""#), "{}", logs[0]);
+    assert!(
+        logs[0].starts_with(r#"EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_mint""#),
+        "{}",
+        logs[0]
+    );
     assert_eq!(env.bal(&alice, "marks").await, 30_000);
     assert_eq!(u(&env.view("mt_supply", json!({"token_id": "marks"})).await), 50_000);
     println!("[genesis] 4 mints, gas burnt {} Tgas", gas.as_tgas());
@@ -137,11 +147,17 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
     println!("[storage] 64-char account with 7 balances: {used} bytes (budget {budget})");
     assert!(used <= budget, "per-account storage {used} > budget {budget}");
     let min = u(&env.view("storage_balance_bounds", json!({})).await["min"]);
-    println!("[storage] registration fee {min} yocto; contract can still pay for ~{} accounts", after["accounts_affordable"]);
+    println!(
+        "[storage] registration fee {min} yocto; contract can still pay for ~{} accounts",
+        after["accounts_affordable"]
+    );
 
     // ---- non-authority is rejected
     for (m, a) in [
-        ("settle", json!({"batch": {"batch_id": "12-18", "mints": [{"account_id": mallory, "token_id": "marks", "amount": "999"}]}})),
+        (
+            "settle",
+            json!({"batch": {"batch_id": "12-18", "mints": [{"account_id": mallory, "token_id": "marks", "amount": "999"}]}}),
+        ),
         ("mt_mint", json!({"owner_id": mallory, "token_ids": ["marks"], "amounts": ["999"]})),
         ("mt_burn", json!({"owner_id": alice, "token_ids": ["marks"], "amounts": ["1"]})),
         ("pause", json!({})),
@@ -160,9 +176,25 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
     env.fails(&mallory, "storage_deposit", json!({}), min - 1, "ERR_DEPOSIT_TOO_SMALL").await;
     env.ok(&mallory, "storage_deposit", json!({}), min).await;
     env.ok(&alice, "mt_transfer", t(&mallory, "1"), 1).await;
-    env.ok(&alice, "mt_batch_transfer", json!({"receiver_id": bob, "token_ids": ["fish", "marks"], "amounts": ["2", "500"]}), 1).await;
-    env.fails(&alice, "mt_batch_transfer", json!({"receiver_id": bob, "token_ids": ["fish", "marks"], "amounts": ["2"]}), 1, "ERR_LENGTH_MISMATCH").await;
-    assert_eq!((env.bal(&alice, "fish").await, env.bal(&bob, "fish").await, env.bal(&mallory, "fish").await), (4, 5, 1));
+    env.ok(
+        &alice,
+        "mt_batch_transfer",
+        json!({"receiver_id": bob, "token_ids": ["fish", "marks"], "amounts": ["2", "500"]}),
+        1,
+    )
+    .await;
+    env.fails(
+        &alice,
+        "mt_batch_transfer",
+        json!({"receiver_id": bob, "token_ids": ["fish", "marks"], "amounts": ["2"]}),
+        1,
+        "ERR_LENGTH_MISMATCH",
+    )
+    .await;
+    assert_eq!(
+        (env.bal(&alice, "fish").await, env.bal(&bob, "fish").await, env.bal(&mallory, "fish").await),
+        (4, 5, 1)
+    );
     let bb = env.view("mt_batch_balance_of", json!({"account_id": bob, "token_ids": ["fish", "marks"]})).await;
     assert_eq!(bb, json!(["5", "20500"]));
     println!("[transfer] mt_transfer / mt_batch_transfer / 1 yocto / registration ok");
@@ -180,7 +212,10 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
     assert!(logs.is_empty(), "a replay emits no events");
     assert_eq!(snap, (env.bal(&alice, "marks").await, env.bal(&bob, "marks").await, env.bal(&carol, "salt").await));
     assert_eq!(snap, (30_000 - 500 + 100, 20_500 - 100, 3));
-    println!("[idempotency] replay of 12-18 -> applied=false, balances unchanged (first apply {} Tgas)", gas3.as_tgas());
+    println!(
+        "[idempotency] replay of 12-18 -> applied=false, balances unchanged (first apply {} Tgas)",
+        gas3.as_tgas()
+    );
 
     // ---- a failing batch reverts atomically (its mint does not stick) and the cursor does not move
     let bad = json!({"batch_id": "18-24",
@@ -211,12 +246,19 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
     let mut burns = vec![];
     for (i, n) in names.iter().enumerate() {
         mints.push(json!({"account_id": n, "token_id": "marks", "amount": "10000"}));
-        transfers.push(json!({"sender_id": n, "receiver_id": names[(i + 1) % 25], "token_id": "marks", "amount": "2500"}));
+        transfers
+            .push(json!({"sender_id": n, "receiver_id": names[(i + 1) % 25], "token_id": "marks", "amount": "2500"}));
         burns.push(json!({"account_id": n, "token_id": "marks", "amount": "100"}));
     }
-    let (logs, gas, _) = env.settle(json!({"batch_id": "18-24", "mints": mints, "transfers": transfers, "burns": burns})).await?;
+    let (logs, gas, _) =
+        env.settle(json!({"batch_id": "18-24", "mints": mints, "transfers": transfers, "burns": burns})).await?;
     let log_bytes: usize = logs.iter().map(String::len).sum();
-    println!("[limits] 75-op batch: gas burnt {} Tgas, {} logs, {} log bytes (max 16384)", gas.as_tgas(), logs.len(), log_bytes);
+    println!(
+        "[limits] 75-op batch: gas burnt {} Tgas, {} logs, {} log bytes (max 16384)",
+        gas.as_tgas(),
+        logs.len(),
+        log_bytes
+    );
     assert!(gas.as_tgas() < 150, "75-op batch used {} Tgas", gas.as_tgas());
 
     // ---- authority rotation (two steps)
@@ -229,7 +271,8 @@ async fn goods_contract_on_sandbox() -> testresult::TestResult<()> {
     println!("[rotation] authority -> bob; old authority rejected");
 
     // ---- conservation: per token, sum of balances == supply == minted - burned
-    let mut holders: Vec<String> = vec![alice.to_string(), bob.to_string(), mallory.to_string(), carol.to_string(), long.to_string()];
+    let mut holders: Vec<String> =
+        vec![alice.to_string(), bob.to_string(), mallory.to_string(), carol.to_string(), long.to_string()];
     holders.extend(names);
     for tkn in TOKENS {
         let mut sum = 0u128;

@@ -3,8 +3,8 @@
 
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{self, Value};
-use near_sdk::test_utils::{get_logs, VMContextBuilder};
-use near_sdk::{testing_env, AccountId, NearToken};
+use near_sdk::test_utils::{VMContextBuilder, get_logs};
+use near_sdk::{AccountId, NearToken, testing_env};
 
 use crate::storage::ACCOUNT_STORAGE_BYTES;
 use crate::*;
@@ -59,7 +59,12 @@ const PLAYER: &str = "p-abc123.authority.testnet";
 fn genesis(c: &mut Goods) {
     c.settle(batch(
         "0-6",
-        vec![mint(FISHER, "marks", 30_000), mint(SMOKE, "marks", 50_000), mint(PLAYER, "marks", 30_000), mint(FISHER, "fish", 10)],
+        vec![
+            mint(FISHER, "marks", 30_000),
+            mint(SMOKE, "marks", 50_000),
+            mint(PLAYER, "marks", 30_000),
+            mint(FISHER, "fish", 10),
+        ],
         vec![],
         vec![],
     ));
@@ -360,11 +365,23 @@ fn add_token_without_redeploy() {
 fn replaying_a_batch_changes_nothing() {
     let mut c = setup();
     genesis(&mut c);
-    let b2 = batch("6-12", vec![mint(FISHER, "fish", 2)], vec![xfer(FISHER, SMOKE, "fish", 5), xfer(SMOKE, FISHER, "marks", 900)], vec![]);
+    let b2 = batch(
+        "6-12",
+        vec![mint(FISHER, "fish", 2)],
+        vec![xfer(FISHER, SMOKE, "fish", 5), xfer(SMOKE, FISHER, "marks", 900)],
+        vec![],
+    );
     let r = c.settle(b2.clone());
     assert!(r.applied && r.complete);
     let snapshot = |c: &Goods| {
-        (bal(c, FISHER, "fish"), bal(c, SMOKE, "fish"), bal(c, FISHER, "marks"), bal(c, SMOKE, "marks"), c.mt_supply("fish".into()), c.settlement_cursor())
+        (
+            bal(c, FISHER, "fish"),
+            bal(c, SMOKE, "fish"),
+            bal(c, FISHER, "marks"),
+            bal(c, SMOKE, "marks"),
+            c.mt_supply("fish".into()),
+            c.settlement_cursor(),
+        )
     };
     let before = snapshot(&c);
     let r2 = c.settle(b2.clone());
@@ -459,7 +476,14 @@ fn multi_part_batch() {
 fn part_out_of_order_rejected() {
     let mut c = setup();
     genesis(&mut c);
-    c.settle(SettlementBatch { batch_id: "6-12".into(), part: Some(1), parts: Some(2), mints: vec![], transfers: vec![], burns: vec![] });
+    c.settle(SettlementBatch {
+        batch_id: "6-12".into(),
+        part: Some(1),
+        parts: Some(2),
+        mints: vec![],
+        transfers: vec![],
+        burns: vec![],
+    });
 }
 
 #[test]
@@ -467,7 +491,14 @@ fn part_out_of_order_rejected() {
 fn next_batch_waits_for_unfinished_parts() {
     let mut c = setup();
     genesis(&mut c);
-    c.settle(SettlementBatch { batch_id: "6-12".into(), part: Some(0), parts: Some(2), mints: vec![], transfers: vec![], burns: vec![] });
+    c.settle(SettlementBatch {
+        batch_id: "6-12".into(),
+        part: Some(0),
+        parts: Some(2),
+        mints: vec![],
+        transfers: vec![],
+        burns: vec![],
+    });
     c.settle(batch("12-18", vec![], vec![], vec![]));
 }
 
@@ -492,9 +523,9 @@ fn mints_then_transfers_then_burns() {
     let mut c = setup();
     let b = batch(
         "0-6",
-        vec![mint(PLAYER, "fish", 2)],                       // gather: +2
-        vec![xfer(PLAYER, SMOKE, "fish", 1)],                  // sell 1
-        vec![burn(PLAYER, "fish", 1)],                         // spoil 1
+        vec![mint(PLAYER, "fish", 2)],        // gather: +2
+        vec![xfer(PLAYER, SMOKE, "fish", 1)], // sell 1
+        vec![burn(PLAYER, "fish", 1)],        // spoil 1
     );
     assert!(c.settle(b).applied);
     assert_eq!((bal(&c, PLAYER, "fish"), bal(&c, SMOKE, "fish")), (0, 1));
@@ -503,7 +534,12 @@ fn mints_then_transfers_then_burns() {
     let logs = get_logs();
     let kinds: Vec<String> = logs
         .iter()
-        .map(|l| serde_json::from_str::<Value>(l.strip_prefix("EVENT_JSON:").unwrap()).unwrap()["event"].as_str().unwrap().to_string())
+        .map(|l| {
+            serde_json::from_str::<Value>(l.strip_prefix("EVENT_JSON:").unwrap()).unwrap()["event"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
         .collect();
     assert_eq!(kinds, vec!["mt_mint", "mt_transfer", "mt_burn", "settle"]);
 }
@@ -545,9 +581,7 @@ fn settle_events_are_grouped() {
 fn oversized_events_fail_with_a_clear_error() {
     let mut c = setup();
     // 140 distinct 64-char owners: ~19 KiB of mt_mint log, over the 16 KiB receipt budget.
-    let mints = (0..140)
-        .map(|i| mint(&format!("{:0>46}.authority.testnet", format!("p{i}")), "marks", 1))
-        .collect();
+    let mints = (0..140).map(|i| mint(&format!("{:0>46}.authority.testnet", format!("p{i}")), "marks", 1)).collect();
     c.settle(batch("0-6", mints, vec![], vec![]));
 }
 

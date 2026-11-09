@@ -5,7 +5,7 @@
 //! permanent and the fixed fee is not refundable (disclosed in README.md).
 
 use near_sdk::json_types::U128;
-use near_sdk::{env, near, require, AccountId, NearToken};
+use near_sdk::{AccountId, NearToken, env, near, require};
 
 use crate::*;
 
@@ -51,7 +51,11 @@ impl Goods {
     /// `storage_balance_bounds().min`. Any excess, or the whole deposit if already registered, is
     /// refunded.
     #[payable]
-    pub fn storage_deposit(&mut self, account_id: Option<AccountId>, registration_only: Option<bool>) -> StorageBalance {
+    pub fn storage_deposit(
+        &mut self,
+        account_id: Option<AccountId>,
+        registration_only: Option<bool>,
+    ) -> StorageBalance {
         let _ = registration_only; // fixed-size registration: there is never an "available" balance
         let payer = env::predecessor_account_id();
         let account = account_id.unwrap_or_else(|| payer.clone());

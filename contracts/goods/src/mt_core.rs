@@ -6,7 +6,7 @@
 //! disclosed in contracts/goods/README.md.
 
 use near_sdk::json_types::U128;
-use near_sdk::{env, near, require, AccountId};
+use near_sdk::{AccountId, env, near, require};
 
 use crate::events::{MtEvent, MtTransferLog};
 use crate::*;
@@ -120,7 +120,7 @@ impl Goods {
     pub fn mt_token(&self, token_ids: Vec<TokenId>) -> Vec<Option<Token>> {
         token_ids
             .into_iter()
-            .map(|t| self.tokens.get(&t).is_some().then(|| Token { token_id: t, owner_id: None }))
+            .map(|t| self.tokens.get(&t).is_some().then_some(Token { token_id: t, owner_id: None }))
             .collect()
     }
 

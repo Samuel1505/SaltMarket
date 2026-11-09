@@ -8,7 +8,7 @@
 
 use near_sdk::json_types::U128;
 use near_sdk::serde::Serialize;
-use near_sdk::{near, AccountId, AsNep297Event};
+use near_sdk::{AccountId, AsNep297Event, near};
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(crate = "near_sdk::serde")]

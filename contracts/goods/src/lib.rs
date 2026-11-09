@@ -22,10 +22,10 @@
 
 use near_sdk::json_types::U128;
 use near_sdk::store::{IterableMap, LookupMap, LookupSet};
-use near_sdk::{env, near, require, AccountId, NearToken, PanicOnDefault, Promise};
+use near_sdk::{AccountId, NearToken, PanicOnDefault, Promise, env, near, require};
 
-mod mt_core;
 pub mod events;
+mod mt_core;
 mod settle;
 mod storage;
 
@@ -332,9 +332,7 @@ impl Goods {
         let key = (token_id.to_string(), account_id.clone());
         let old = self.balances.get(&key).copied().unwrap_or(0);
         if old < amount {
-            env::panic_str(&format!(
-                "ERR_INSUFFICIENT_BALANCE: {account_id} has {old} {token_id}, needs {amount}"
-            ));
+            env::panic_str(&format!("ERR_INSUFFICIENT_BALANCE: {account_id} has {old} {token_id}, needs {amount}"));
         }
         let new = old - amount;
         if new == 0 {
