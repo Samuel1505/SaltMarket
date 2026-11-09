@@ -70,7 +70,7 @@ export const ECONOMY = {
     fastFillTicks: 6, // filled within this many ticks → ceiling −5%
     lowerBps: 500,
     // Tuning L6: a visit that fills completely (not fast) still eases the ceiling a little.
-    fullFillLowerBps: 300,
+    fullFillLowerBps: 200, // L17: was 300 (after S4 the ceiling over-corrected toward deflation)
     // Tuning L15: order size moves by volumeStep per visit within [minVolume, maxVolume].
     volumeStep: 2,
     minVolume: 12,
@@ -96,16 +96,20 @@ export const ECONOMY = {
   productionStopOfTarget: 1.5,
   // Tuning L4: buyers bid the recent median × (1 + this × stock shortfall), capped at break-even.
   bidNeedPremium: 0.2,
+  // Scenario tuning S4: a buyer below half its target raises its bid this much per tick, up to break-even.
+  bidEscalatePerTick: 0.05,
   // Tuning L3: a seller asks at least this share of the best standing bid for its good.
   askOfBestBid: 0.97,
   // Time-lapse "flood" shock: a bot dumps goods at this share of anchor.
-  floodPriceOfAnchor: 0.6,
+  floodPriceOfAnchor: 0.5, // scenario tuning S3: was 0.6 (above every glut-lowered bid, so nothing traded)
 
   // §8.3 — supply elasticity.
   elasticity: 0.8,
   rateFactorClamp: [0.3, 1.8] as const,
   stormWeatherFactor: 0.15,
   stormSecondDayFactor: 0.75,
+  // Fishermen raise asks this much while a storm is on (they expect a short catch).
+  stormAskPremium: 0.45, // scenario tuning S1: was 0.2 (storm barely moved fish)
 
   // §8.1, §8.2, §8.5 — pricing coefficients (used only by packages/sim/src/pricing/merchant-rules.ts).
   pricing: {
@@ -150,9 +154,9 @@ export const ECONOMY = {
     cooper: { count: 1, startCash: m(300), startInventory: { timber: 6, barrel: 2 }, baseOutputPerDay: 0, upkeepPerDay: m(10), targetStock: 4, inputTargets: { timber: 6 }, expectedDailySales: 2 },
     // Approved loop: the Smokehouse sells at most ~half the Captain's order per visit, leaving room for players.
     smokehouse: {
-      count: 1, startCash: m(600), startInventory: { fish: 10, salt: 6, barrel: 2, cured_fish: 8 }, baseOutputPerDay: 0, upkeepPerDay: m(15), targetStock: 8,
+      count: 1, startCash: m(600), startInventory: { fish: 10, salt: 6, barrel: 2, cured_fish: 8 }, baseOutputPerDay: 0, upkeepPerDay: m(15), targetStock: 6, // scenario tuning S2: was 8 (buffer absorbed storms)
       maxCuredSellPerVisit: 8,
-      inputTargets: { fish: 12, salt: 6, barrel: 2 },
+      inputTargets: { fish: 6, salt: 3, barrel: 1 }, // scenario tuning S6: was 12/6/2 (stock buffers hid storms from the ship)
       expectedDailySales: 8,
     },
   },

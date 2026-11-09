@@ -28,6 +28,7 @@ const E = ECONOMY;
 const P = E.pricing;
 const NAME: Record<Good, string> = { fish: 'fish', salt: 'salt', timber: 'timber', barrel: 'barrels', cured_fish: 'cured fish' };
 const Cap = (g: Good) => NAME[g][0]!.toUpperCase() + NAME[g].slice(1);
+const isAre = (g: Good) => (g === 'barrel' ? 'are' : 'is');
 
 // ─── 1. Who does what ─────────────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,8 @@ export function askPrice(i: AskInput, tick: number): PriceDecision {
   // Too much on hand: spoilage punishes hoarding, so discount up to 15%.
   const excess = i.stock > P.excessStockMultiple * target;
   if (excess) raw *= 1 - Math.min(P.excessStockMaxDiscount, ((i.stock - P.excessStockMultiple * target) / target) * 0.1 + 0.05);
+  // Weather-sensitive sellers price in the coming shortage as soon as a storm hits (NPC_AGENTS §4.1).
+  if (i.stormActive && rule.weatherSensitive) raw *= 1 + E.stormAskPremium;
   // Don't sell far below what buyers are openly bidding (tuning L3): surplus goes to the producer, not the middleman.
   const bidFloor = i.bestBid ? i.bestBid * E.askOfBestBid : 0;
   const followsBid = bidFloor > raw && !excess;
@@ -122,10 +125,10 @@ export function askPrice(i: AskInput, tick: number): PriceDecision {
   let text = `${Cap(i.good)} at ${fmt(price)} marks, my usual price.`;
   if (i.stormActive && rule.weatherSensitive) { code = 'STORM_SUPPLY_CUT'; text = `Storm kept the boats in. Stock is low, raising my price ${Math.max(0, pctVsNormal)}%.`; }
   else if (excess) { code = 'EXCESS_STOCK_DISCOUNT'; text = `Too much ${g} on hand, discounting ${Math.max(0, -pctVsNormal)}%.`; }
-  else if (i.stock < 0.5 * target && pctVsNormal > 0) { code = 'LOW_STOCK_RAISE_ASK'; text = `${Cap(i.good)} is scarce, raising my price ${pctVsNormal}%.`; }
+  else if (i.stock < 0.5 * target && pctVsNormal > 0) { code = 'LOW_STOCK_RAISE_ASK'; text = `${Cap(i.good)} ${isAre(i.good)} scarce, raising my price ${pctVsNormal}%.`; }
   else if (followsBid && pctVsNormal > 0) { code = 'DEMAND_UP_RAISE_ASK'; text = `Buyers are bidding up to ${fmt(i.bestBid ?? 0)} marks for ${g}. Raising my price ${pctVsNormal}%.`; factors.push({ key: 'bestBid', label: 'Best buy offer', value: i.bestBid ?? 0, unit: 'pips' }); }
-  else if (demandPressure > 0.3 && pctVsNormal > 0) { code = 'DEMAND_UP_RAISE_ASK'; text = `${Cap(i.good)} is selling fast, nudging my price up ${pctVsNormal}%.`; }
-  else if (pctVsNormal < -5) { code = 'EXCESS_STOCK_DISCOUNT'; text = `${Cap(i.good)} is slow to sell, discounting ${-pctVsNormal}%.`; }
+  else if (demandPressure > 0.3 && pctVsNormal > 0) { code = 'DEMAND_UP_RAISE_ASK'; text = `${Cap(i.good)} ${isAre(i.good)} selling fast, nudging my price up ${pctVsNormal}%.`; }
+  else if (pctVsNormal < -5) { code = 'EXCESS_STOCK_DISCOUNT'; text = `${Cap(i.good)} ${isAre(i.good)} slow to sell, discounting ${-pctVsNormal}%.`; }
   else if (i.archetype === 'smokehouse' && i.captainCeiling) { code = 'SHIP_NEAR_HOLD_STOCK'; text = `Pricing cured fish just under the Captain's ${fmt(i.captainCeiling)} marks.`; }
   return { price, reason: reason(code, text, factors, tick) };
 }
@@ -170,7 +173,11 @@ export function bidPrice(i: BidInput, tick: number): BidDecision {
   // Tuning L4: bid near the going price, more when short of stock, less when full; never above break-even.
   const need = target > 0 ? clamp((target - i.stock) / target, -1, 1) : 0;
   const market = m[i.good] * (1 + E.bidNeedPremium * need);
-  let bid = Math.min(maxBid * (1 - i.margin), market) * (1 - P.kGlut * glut);
+  const breakEven = maxBid * (1 - i.margin);
+  let bid = Math.min(breakEven, market) * (1 - P.kGlut * glut);
+  // Scenario tuning S4: when badly short, raise last tick's bid a little each tick (up to break-even) until sellers bite.
+  const escalating = need > 0.5 && i.previous !== undefined && i.previous > 0 && i.previous * (1 + E.bidEscalatePerTick) > bid;
+  if (escalating) bid = Math.min(breakEven, (i.previous ?? 0) * (1 + E.bidEscalatePerTick));
   // Tuning L14: bids live in the same 0.5×–2.5× band as asks (a flood can make goods cheap, not free).
   bid = Math.min(bid, P.askClampAnchor[1] * E.goods[i.good].anchor);
   if (bid > 0) bid = Math.max(bid, P.askClampAnchor[0] * E.goods[i.good].anchor);
@@ -190,7 +197,8 @@ export function bidPrice(i: BidInput, tick: number): BidDecision {
   }
   const qty = i.stock >= P.excessStockMultiple * target ? 0 : Math.max(0, target - i.stock);
   const standingQty = Math.max(0, P.excessStockMultiple * target - i.stock);
-  if (glut > 0.2) return { price, qty, standingQty, paused: false, reason: reason('MARKET_GLUT_LOWER_BID', `${Cap(i.good)} is flooding in. Lowering my bid ${Math.round(P.kGlut * glut * 100)}%.`, factors, tick) };
+  if (glut > 0.2) return { price, qty, standingQty, paused: false, reason: reason('MARKET_GLUT_LOWER_BID', `${Cap(i.good)} ${isAre(i.good)} flooding in. Lowering my bid ${Math.round(P.kGlut * glut * 100)}%.`, factors, tick) };
+  if (escalating && qty > 0) return { price, qty, standingQty, paused: false, reason: reason('DEMAND_UP_RAISE_ASK', `Short of ${g} (${i.stock} of ${target}). Raising my bid to ${fmt(price)} marks.`, factors, tick) };
   if (qty === 0) return { price, qty, standingQty, paused: false, reason: reason('STEADY', `Enough ${g} on hand. Not buying more for now.`, factors, tick) };
   return { price, qty, standingQty, paused: false, reason: reason('STEADY', `Buying ${g} up to ${fmt(price)} marks to keep my margin.`, factors, tick) };
 }
@@ -233,7 +241,7 @@ export function lowPriceRule(archetype: Archetype, medianPrice: number, good: Go
 }
 export const lowPriceReason = (good: Good, paused: boolean, tick: number): Reason =>
   paused
-    ? reason('PRICE_BELOW_COST_PAUSE', `${Cap(good)} is too cheap to be worth cutting. Pausing until it recovers.`, [], tick)
+    ? reason('PRICE_BELOW_COST_PAUSE', `${Cap(good)} ${isAre(good)} too cheap to be worth cutting. Pausing until it recovers.`, [], tick)
     : reason('STEADY', `${Cap(good)} prices recovered. Back to work.`, [], tick);
 
 // ─── 5. The Captain's ceiling (§7) ────────────────────────────────────────────────────────────
