@@ -169,6 +169,8 @@ pnpm dev:chain               # server + web with NearLedger on testnet (needs .e
 pnpm sim:headless --seed 42 --days 30     # run the economy with no UI, print metrics
 pnpm sim:storm --seed 42                   # run the Storm scenario and print the response report
 pnpm sim:week --seed 42 --storm-day 3        # simulate a week (168 ticks) headless and print the story table
+pnpm sim:tune --seeds 10 [--bots 5]          # ECONOMY §11 stability checks over many seeds (PASS/FAIL)
+pnpm demo:seed [--seed 42] [--force]         # demo world with two labeled demo Halls → data/world.json
 pnpm test                    # unit + property + scenario tests
 pnpm typecheck && pnpm lint
 pnpm contracts:build         # build the Rust contract (wasm)
@@ -188,23 +190,24 @@ Loop approved:    2026-11-09
   (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
   visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
   MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
-Phase:            1–2 in progress (thin slice live). Branch backend/foundation pushed (private repo).
+Phase:            2 done (tuning + scenarios); Phase 3 server live. Branch backend/foundation (private repo).
 Last session:     2026-11-09
-What works:       protocol v0.1.0; pnpm dev:mock; real sim behind the same endpoints (pnpm dev, MemoryLedger,
-                  JSON snapshot in data/world.json). Sim: seeded RNG, ledger helpers, gather, Harbor + Hall
-                  markets, tax/fees, crafting, spoilage, daily sinks, Captain (Smokehouse cap 8), all six NPC
-                  types via merchant-rules.ts + spending guard, closure/invest/rescue, Storm/flood/force_broke,
-                  time-lapse sandbox. Invariants (mark + good conservation, no negatives, determinism) checked
-                  every tick and every command; shared conformance suite passes on mock AND live (30 tests).
-                  Judge routes gated by JUDGE_MODE=1 on live (mock: on unless JUDGE_MODE=0).
+What works:       protocol v0.1.0; pnpm dev (real sim, MemoryLedger, JSON snapshot) and pnpm dev:mock; shared
+                  conformance suite passes on both. Economy tuned (docs/TUNING_LOG.md): NPC-only passes all
+                  ECONOMY §11 checks over 10 seeds × 30 days. Scenario tests pass: Storm (seed 42, all 6
+                  expectations), flood, Hall competition, closure/invest/rescue. pnpm sim:headless, sim:tune,
+                  sim:storm, sim:week, demo:seed. Docs updated (no SQLite; MERCHANT_* events vs reason codes).
 In progress:      —
-Next up:          Economy tuning (ECONOMY §11): raw goods sit at the 0.5× clamp and the Captain ceiling pins
-                  at 90 — producers oversupply and only the Smokehouse feeds the ship. Then sim:storm /
-                  sim:week reports, Storm-scenario test, Hall competition test, NearLedger (Phase 4).
-Known issues:     Economy untuned (see above). History endpoint returns all venues combined (venueId: null).
+Next up:          Social login options + pick (report by end of Nov 10). Then NearLedger, ONLY after the human
+                  confirms the testnet account exists. Optional: tidy unused imports in simBackend.ts.
+Known issues:     5 always-on bot players still break the money checks (free gathering → oversupplied Captain;
+                  see TUNING_LOG). Storm → Captain short visit is seed-dependent (2 of 10 seeds).
+                  History endpoint returns all venues combined (venueId: null).
 Open questions for the human:
   - NEAR testnet account to use as the game authority? (human creates; never invent)
-  - Social login: who owns widget vs. server verification? (TEAM_SPLIT §7)
+  - Social login: who owns widget vs. server verification? Proposed: frontend = widget + redirect,
+    backend = token check + account mapping. Confirm with teammate; record in TEAM_SPLIT §7.
+  - Gathering vs. bot players: lower the daily gather cap / yield? (changes the approved 30-s loop)
 ```
 
 ### Status — frontend
