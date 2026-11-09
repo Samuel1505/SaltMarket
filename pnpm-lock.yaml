@@ -54,8 +54,8 @@ importers:
         specifier: ^5.12.8
         version: 5.12.8
       jose:
-        specifier: 6.2.16
-        version: 6.2.16
+        specifier: 6.2.14
+        version: 6.2.14
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -674,8 +674,8 @@ packages:
   isarray@2.0.5:
     resolution: {integrity: sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==}
 
-  jose@6.2.16:
-    resolution: {integrity: sha512-4LSJpbuBuPdGrONCdZUy0xnxtLf8eEz+EY0SMXdHQEBU7bgUHDVblU/JAjryv3wID9/LK7/YuwFwq+AQNfMscQ==}
+  jose@6.2.14:
+    resolution: {integrity: sha512-3JasLuki1NRLQvY4wCoC37KZk4qxoBx2k2aFqLxT84IezqW0bkJKnNtxnZj/Fu1xsQivoc/lytxaRHJoGLjJ1A==}
 
   json-schema-ref-resolver@3.0.1:
     resolution: {integrity: sha512-w+HwgljXpVwZ3IidoUR1qPZxSOQ+NRQWuVe6a5pe8XbHsNZE4UAwVPUvzZagn7yBKbJtt6UJnRFYbNTRPZI45Q==}
@@ -1620,7 +1620,7 @@ snapshots:
 
   isarray@2.0.5: {}
 
-  jose@6.2.16: {}
+  jose@6.2.14: {}
 
   json-schema-ref-resolver@3.0.1:
     dependencies:
