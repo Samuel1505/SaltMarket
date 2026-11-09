@@ -10,7 +10,7 @@ import {
 import { ECONOMY } from '@saltmarket/shared/config';
 import type { GameBackend, Result, TimelapseHandle } from './backend.js';
 
-export type AppOptions = { judge: boolean; autoTick: boolean; validateOutgoing: 'off' | 'log' | 'throw'; logger?: boolean };
+export type AppOptions = { judge: boolean; autoTick: boolean; validateOutgoing: 'off' | 'log' | 'throw'; logger?: boolean | object };
 
 type Conn = { id: number; send: (m: ServerMessageT) => void; playerId: string | null; timelapse?: TimelapseHandle; window: number[] };
 

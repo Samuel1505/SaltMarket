@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "tsx watch --exclude 'data/**' src/main.ts",
     "dev:mock": "tsx watch src/main.ts --mock",
     "start": "tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json"

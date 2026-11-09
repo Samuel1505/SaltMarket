@@ -188,15 +188,21 @@ Loop approved:    2026-11-09
   (tick 20); gather cooldown 10 s (4 ticks); Smokehouse sells at most ~half the Captain's order per
   visit (8 of 16); SQLite replaced by in-memory state + JSON snapshot; closure events are
   MERCHANT_CLOSED / MERCHANT_REOPENED / MERCHANT_RESCUED.
-Phase:            0 done; protocol v0 published; pnpm dev:mock done
+Phase:            1–2 in progress (thin slice live). Branch backend/foundation pushed (private repo).
 Last session:     2026-11-09
-What works:       pnpm monorepo (strict TS 5.9, Vitest, zod 4); shared economy config incl. approved
-                  loop values; packages/shared/src/protocol.ts v0.1.0 (REST, WS both directions,
-                  snapshot/delta, time-lapse, judge); rule lint (sim purity); typecheck/test/lint green
+What works:       protocol v0.1.0; pnpm dev:mock; real sim behind the same endpoints (pnpm dev, MemoryLedger,
+                  JSON snapshot in data/world.json). Sim: seeded RNG, ledger helpers, gather, Harbor + Hall
+                  markets, tax/fees, crafting, spoilage, daily sinks, Captain (Smokehouse cap 8), all six NPC
+                  types via merchant-rules.ts + spending guard, closure/invest/rescue, Storm/flood/force_broke,
+                  time-lapse sandbox. Invariants (mark + good conservation, no negatives, determinism) checked
+                  every tick and every command; shared conformance suite passes on mock AND live (30 tests).
+                  Judge routes gated by JUDGE_MODE=1 on live (mock: on unless JUDGE_MODE=0).
 In progress:      —
-Next up:          sim core (step 4) → real sim behind same endpoints (step 5,
-                  target: frontend playtest evening of Nov 10)
-Known issues:     docs still mention SQLite and old event names (doc-update request sent to the human)
+Next up:          Economy tuning (ECONOMY §11): raw goods sit at the 0.5× clamp and the Captain ceiling pins
+                  at 90 — producers oversupply and only the Smokehouse feeds the ship. Then sim:storm /
+                  sim:week reports, Storm-scenario test, Hall competition test, NearLedger (Phase 4).
+Known issues:     Economy untuned (see above). History endpoint returns all venues combined (venueId: null).
+                  Docs still mention SQLite and old event names (doc-update request pending with the human).
 Open questions for the human:
   - NEAR testnet account to use as the game authority? (human creates; never invent)
   - Social login: who owns widget vs. server verification? (TEAM_SPLIT §7)
@@ -276,6 +282,10 @@ Maintained by the backend owner's session. The source of truth is `packages/shar
 **Time-lapse ("Watch a week")**
 - Start with WS `{ t: 'timelapse', action: 'start', days?, wallSeconds?, shocks? }` or `POST /api/timelapse`. Frames arrive on your socket as `timelapse` messages with `phase: 'started' | 'frame' | 'done' | 'stopped'`; a frame comes every 6 game ticks, about 60 s for 168 ticks. `done` includes a `summary`. It never changes the live world.
 - Shocks: `{ kind: 'storm', day }`, `{ kind: 'flood', good, qty, day }`, `{ kind: 'close_merchant', npcId?, day, investDay? }`.
+
+**Running the server**
+- `pnpm dev` runs the **real sim** (MemoryLedger, offline) on the same endpoints; judge routes there need `JUDGE_MODE=1 pnpm dev`. World persists to `data/world.json` (delete it for a fresh world). `pnpm dev:mock` stays available as a fallback.
+- `GET /api/market/:good/history` on the live server returns all venues combined (`venueId: null`).
 
 **Mock server**
 - Run: `pnpm dev:mock` → http://127.0.0.1:3000 (override with `PORT`, `HOST`). Judge routes are on in mock unless `JUDGE_MODE=0`. The mock world starts on day 5 (tick 120) so sparklines have history; the first ship docks at tick 140 (~50 s), a storm hits at tick 204 (~3.5 min) and repeats every 15 min; Ludo the salt-panner starts closed (invest to reopen, or the Town Fund rescues him after 5 game days).
