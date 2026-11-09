@@ -146,7 +146,7 @@ The server then needs, in its local `.env` only: `NEAR_NETWORK=testnet`, `NEAR_C
 
 ## Decisions (2026-11-09)
 
-1. **Topology:** the contract is on `goods.samuleowen.testnet`; the authority is `samuleowen.testnet` (the account already exists).
-2. **Contract account keys:** keep the full-access key on `goods.samuleowen.testnet` until Nov 14 so fixes can be redeployed, then decide whether to delete it.
+1. **Topology:** the contract is on `goods.samuelowen.testnet`; the authority is `samuelowen.testnet` (the account already exists).
+2. **Contract account keys:** keep the full-access key on `goods.samuelowen.testnet` until Nov 14 so fixes can be redeployed, then decide whether to delete it.
 3. **`repository` in Cargo.toml:** left as a TODO, to be filled in later.
-4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.samuleowen.testnet`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
+4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.samuelowen.testnet`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
