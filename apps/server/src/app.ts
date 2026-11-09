@@ -14,7 +14,7 @@ export type AppOptions = { judge: boolean; autoTick: boolean; validateOutgoing: 
 
 type Conn = { id: number; send: (m: ServerMessageT) => void; playerId: string | null; timelapse?: TimelapseHandle; window: number[] };
 
-const STATUS: Record<string, number> = { BAD_REQUEST: 400, UNAUTHORIZED: 401, JUDGE_ONLY: 403, NOT_FOUND: 404, RATE_LIMITED: 429, TIMELAPSE_BUSY: 429, INTERNAL: 500 };
+const STATUS: Record<string, number> = { BAD_REQUEST: 400, UNAUTHORIZED: 401, BAD_CREDENTIAL: 401, SOCIAL_UNAVAILABLE: 501, JUDGE_ONLY: 403, NOT_FOUND: 404, RATE_LIMITED: 429, TIMELAPSE_BUSY: 429, INTERNAL: 500 };
 
 export async function buildApp(backend: GameBackend, opts: AppOptions) {
   const app = Fastify({ logger: opts.logger ?? false });
@@ -54,7 +54,11 @@ export async function buildApp(backend: GameBackend, opts: AppOptions) {
   app.post('/api/auth/login', async (req, res) => {
     const body = LoginRequest.safeParse(req.body ?? {});
     if (!body.success) return bad(res, 'Sign-in details look wrong.');
-    return reply(res, backend.login(body.data.provider, body.data.displayName));
+    if (body.data.provider === 'social') {
+      if (!body.data.credential) return res.code(401).send({ ok: false, code: 'BAD_CREDENTIAL', message: 'Sign-in failed. Please try again.' });
+      return reply(res, await backend.loginSocial(body.data.credential, body.data.displayName));
+    }
+    return reply(res, backend.login('guest', body.data.displayName));
   });
 
   app.get('/api/world', async (req, res) => res.send({ ok: true, data: backend.snapshot(playerOf(req)) }));

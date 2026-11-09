@@ -63,7 +63,6 @@ const marks = (pips: number) => {
   const v = pips / 100;
   return Number.isInteger(v) ? `${v}` : v.toFixed(1);
 };
-const emptyInv = (): Record<Good, number> => ({ fish: 0, salt: 0, timber: 0, barrel: 0, cured_fish: 0 });
 
 type MockOrder = { id: string; venueId: string; good: Good; side: 'buy' | 'sell'; pricePips: number; qty: number; createdTick: number };
 
@@ -147,7 +146,6 @@ export class MockBackend implements GameBackend {
   private prevOfferIds = new Set<string>();
   private removedOfferIds: string[] = [];
   private settlements: Settlement[] = [];
-  private lastPurseTrend = new Map<string, number>();
   private activeTimelapses = 0;
   private readonly timelapseFrameMs: number | undefined;
 
@@ -190,6 +188,21 @@ export class MockBackend implements GameBackend {
     this.pushFeed({ kind: 'system', text: `${name} opened a stall at the harbor.`, notable: false }, id);
     return { ok: true, data: { token, playerId: id, displayName: name, provider } };
   }
+
+  /** Mock: any non-empty credential is accepted and always maps to the same player (for building the UI flow). */
+  async loginSocial(credential: string, displayName?: string): Promise<Result<Session>> {
+    if (!credential.trim()) return fail('BAD_CREDENTIAL', 'Sign-in failed. Please try again.');
+    const existing = this.socialPlayers.get(credential);
+    const token = randomUUID();
+    if (existing) {
+      this.tokens.set(token, existing);
+      return { ok: true, data: { token, playerId: existing, displayName: this.players.get(existing)!.name, provider: 'social' } };
+    }
+    const r = this.login('social', displayName);
+    if (r.ok) this.socialPlayers.set(credential, r.data.playerId);
+    return r;
+  }
+  private readonly socialPlayers = new Map<string, string>();
 
   playerForToken(token: string): string | null {
     return this.tokens.get(token) ?? null;

@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { MemoryLedger, NearLedger, type LedgerAdapter } from '@saltmarket/chain';
 import { buildApp } from './app.js';
+import { socialVerifierFromEnv } from './auth.js';
 import type { GameBackend } from './backend.js';
 import { SimBackend } from './live/simBackend.js';
 import { MockBackend } from './mock/mockBackend.js';
@@ -54,7 +55,9 @@ else {
   const ledger: LedgerAdapter = ledgerMode === 'near' ? nearLedger() : new MemoryLedger();
   // On NEAR, settle once per game day by default to keep transactions (and gas allowance) modest.
   const settleEveryTicks = Number(process.env.SETTLE_EVERY_TICKS ?? (ledgerMode === 'near' ? 24 : 6));
-  live = new SimBackend({ seed, ledger, settleEveryTicks, snapshotPath: process.env.SNAPSHOT_PATH ?? 'data/world.json', log: (m) => console.log(m) });
+  const social = socialVerifierFromEnv(process.env);
+  console.log(`social login: ${social ? 'Privy' : 'off (guest only)'}`);
+  live = new SimBackend({ seed, ledger, settleEveryTicks, ...(social ? { social } : {}), snapshotPath: process.env.SNAPSHOT_PATH ?? 'data/world.json', log: (m) => console.log(m) });
   backend = live;
 }
 

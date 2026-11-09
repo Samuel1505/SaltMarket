@@ -19,7 +19,7 @@
 import { z } from 'zod';
 import { ARCHETYPES, GATHER_NODES, GOODS, RECIPES } from './config/economy.js';
 
-export const PROTOCOL_VERSION = '0.1.0';
+export const PROTOCOL_VERSION = '0.2.0'; // 0.2.0 (additive): SOCIAL_UNAVAILABLE / BAD_CREDENTIAL codes; per-venue history
 
 // ───────────────────────────── primitives ─────────────────────────────
 
@@ -75,6 +75,8 @@ export const ERROR_CODES = [
   'TIMELAPSE_BUSY',
   'JUDGE_ONLY',
   'VERSION_MISMATCH',
+  'SOCIAL_UNAVAILABLE', // social login is not configured on this server; use guest
+  'BAD_CREDENTIAL', // the social sign-in token was invalid or expired
   'INTERNAL',
 ] as const;
 export type KnownErrorCode = (typeof ERROR_CODES)[number];
@@ -576,7 +578,7 @@ export type ServerMessageType = ServerMessage['t'];
 export const LoginRequest = z.object({
   provider: z.enum(['guest', 'social']).default('guest'),
   displayName: z.string().min(1).max(24).optional(),
-  /** For provider 'social': the credential returned by the sign-in widget. Shape decided with the frontend. */
+  /** For provider 'social': the Privy access token from the sign-in widget (`getAccessToken()`). */
   credential: z.string().optional(),
 });
 export type LoginRequest = z.infer<typeof LoginRequest>;

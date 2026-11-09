@@ -38,6 +38,8 @@ export interface GameBackend {
   readonly mode: 'mock' | 'live';
 
   login(provider: 'guest' | 'social', displayName?: string): Result<Session>;
+  /** Social/email login: verify the sign-in token and map the identity to a stable player (same player every time). */
+  loginSocial(credential: string, displayName?: string): Promise<Result<Session>>;
   /** Resolve a session token to a player id, or null if unknown. */
   playerForToken(token: string): string | null;
 

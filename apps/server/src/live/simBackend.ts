@@ -8,14 +8,15 @@ import { ECONOMY, GATHER_NODES, GOOD_NAMES, GOODS, NODE_NAMES, RECIPE_NAMES, REC
 import {
   HARBOR_VENUE_ID, PROTOCOL_VERSION,
   type Explain, type FeedItem, type Health, type JudgeLedger, type Leaderboard, type MarketHistory, type NpcCard, type Offer,
-  type PlayerView, type Quote, type Session, type TimelapseFrame, type Venue, type WorldDelta, type WorldSnapshot,
+  type PlayerView, type Quote, type Session, type Venue, type WorldDelta, type WorldSnapshot,
 } from '@saltmarket/shared/protocol';
 import {
-  addPlayer, applyCommand, assertInvariants, burnMintRatio, buysOf, CAPTAIN, checkInvariants, createWorld, forceBroke, LABEL,
+  addPlayer, applyCommand, assertInvariants, buysOf, CAPTAIN, checkInvariants, createWorld, forceBroke, LABEL,
   marksSupply, medianPrice, RULES_FILE, scheduleEvent, sellsOf, step, Timelapse, TOWN_FUND, volume, yieldFor,
   type Command, type SimEvent, type WorldState,
 } from '@saltmarket/sim';
 import { classifyError, type LedgerAdapter, type SettlementBatch, type TokenId } from '@saltmarket/chain';
+import type { SocialVerifier } from '../auth.js';
 import { fail, type CommandOutcome, type GameBackend, type GameCommand, type Result, type TimelapseEmit, type TimelapseHandle, type TimelapseOptions } from '../backend.js';
 
 const E = ECONOMY;
@@ -25,6 +26,8 @@ type StoredBatch = { batchId: string; tickFrom: number; tickTo: number; deltas: 
 type Snapshot = {
   world: WorldState;
   tokens?: Record<string, string>;
+  /** Verified social identity ("privy:<did>") → player id. */
+  socialPlayers?: Record<string, string>;
   /** Settlement cursor and unconfirmed batches (REQUESTS C2). Absent in older snapshots. */
   ledger?: { lastSettled: [string, string][]; lastSettledTick: number; pending: StoredBatch[]; settlements?: JudgeLedger['settlements'] };
 };
@@ -42,9 +45,10 @@ export type SimOptions = {
   log?: (msg: string) => void;
   /** Ticks per settlement window (SETTLE_EVERY_TICKS). Default 6; on NEAR prefer 24 (one tx per game day). */
   settleEveryTicks?: number;
+  /** Social login verifier (Privy). Unset → social login answers SOCIAL_UNAVAILABLE. */
+  social?: SocialVerifier;
 };
 
-const fmt = (p: number) => { const v = p / 100; return Number.isInteger(v) ? `${v}` : v.toFixed(1); };
 const personalise = (f: FeedRec, pid: string | null): FeedItem => ({ ...f.item, mine: !!pid && f.accountId === pid });
 
 export class SimBackend implements GameBackend {
@@ -105,6 +109,25 @@ export class SimBackend implements GameBackend {
   playerForToken(token: string): string | null {
     return this.tokens.get(token) ?? null;
   }
+
+  /** Verified social identity → the same player every time (mapping persisted in the snapshot). */
+  async loginSocial(credential: string, displayName?: string): Promise<Result<Session>> {
+    if (!this.opts.social) return fail('SOCIAL_UNAVAILABLE', 'Social sign-in is not set up here yet. Play as a guest.');
+    const id = await this.opts.social.verify(credential);
+    if (!id) return fail('BAD_CREDENTIAL', 'Sign-in failed or expired. Please try again.');
+    const key = `${id.provider}:${id.subject}`;
+    const existing = this.socialPlayers[key];
+    const token = randomUUID();
+    if (existing && this.s.players[existing]) {
+      this.tokens.set(token, existing);
+      this.persistedTokens[token] = existing;
+      return { ok: true, data: { token, playerId: existing, displayName: this.s.accounts[existing]!.name, provider: 'social' } };
+    }
+    const r = this.login('social', displayName);
+    if (r.ok) this.socialPlayers[key] = r.data.playerId;
+    return r;
+  }
+  private socialPlayers: Record<string, string> = {};
 
   // ───────────── time ─────────────
 
@@ -186,9 +209,20 @@ export class SimBackend implements GameBackend {
   history(good: Good, days: number, venueId: string | null): Result<MarketHistory> {
     if (venueId && venueId !== HARBOR_VENUE_ID && !this.s.halls[venueId]) return fail('NOT_FOUND', 'No such market.');
     const from = this.s.tick - Math.max(1, Math.min(days, 30)) * TPD;
-    const points = this.s.history[good].filter((p) => p.tick > from).map((p) => ({ tick: p.tick, medianPips: p.median, lastPips: p.last, volume: p.volume }));
-    // History is kept for all venues combined; venueId null says so.
-    return { ok: true, data: { good, venueId: null, bucketTicks: 6, points } };
+    if (!venueId) {
+      const points = this.s.history[good].filter((p) => p.tick > from).map((p) => ({ tick: p.tick, medianPips: p.median, lastPips: p.last, volume: p.volume }));
+      return { ok: true, data: { good, venueId: null, bucketTicks: 6, points } };
+    }
+    // One venue: built from the trade log, which keeps the last 7 days.
+    const start = Math.max(from, this.s.tick - 7 * TPD);
+    const trades = this.s.trades.filter((t) => t.good === good && t.venueId === venueId && t.tick > start);
+    const points: MarketHistory['points'] = [];
+    for (let b = start - (start % 6) + 6; b <= this.s.tick; b += 6) {
+      const ts = trades.filter((t) => t.tick > b - 6 && t.tick <= b);
+      const ps = ts.flatMap((t) => Array<number>(Math.min(t.qty, 5)).fill(t.price)).sort((x, y) => x - y);
+      points.push({ tick: b, medianPips: ps.length ? ps[Math.floor(ps.length / 2)]! : null, lastPips: ts.at(-1)?.price ?? null, volume: ts.reduce((n, t) => n + t.qty, 0) });
+    }
+    return { ok: true, data: { good, venueId, bucketTicks: 6, points } };
   }
 
   leaderboard(pid: string | null): Leaderboard {
@@ -620,6 +654,7 @@ export class SimBackend implements GameBackend {
     }
     assertInvariants(data.world);
     this.persistedTokens = data.tokens ?? {};
+    this.socialPlayers = data.socialPlayers ?? {};
     if (data.ledger) {
       this.lastSettled = new Map(data.ledger.lastSettled.map(([k, v]) => [k, BigInt(v)]));
       this.lastSettledTick = data.ledger.lastSettledTick;
@@ -642,6 +677,7 @@ export class SimBackend implements GameBackend {
     const snap: Snapshot = {
       world: this.s,
       tokens: this.persistedTokens,
+      socialPlayers: this.socialPlayers,
       ledger: {
         lastSettled: [...this.lastSettled].map(([k, v]) => [k, v.toString()]),
         lastSettledTick: this.lastSettledTick,

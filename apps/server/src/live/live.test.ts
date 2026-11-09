@@ -20,6 +20,9 @@ describe('live sim backend', () => {
       WorldDelta.parse(b.deltaFor(s.data.playerId));
     }
     WorldSnapshot.parse(b.snapshot(s.data.playerId));
+    const h = b.history('fish', 2, 'harbor');
+    expect(h.ok && h.data.venueId).toBe('harbor');
+    expect(h.ok && h.data.points.some((p) => p.volume > 0)).toBe(true);
     await new Promise((r) => setTimeout(r, 20));
     const j = b.judgeLedger(10);
     expect(j.settlements[0]?.status).toBe('settled');
