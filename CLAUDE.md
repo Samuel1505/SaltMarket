@@ -195,7 +195,7 @@ Loop approved:    2026-11-09
 Phase:            4 (NEAR) LIVE on testnet since 2026-11-09.
 Last session:     2026-11-09
 What works:       Everything in Phase 1–3, plus live settlement: the demo world (pnpm demo:seed) runs from
-                  ~/Desktop/dev/saltmarket-backend (worktree on backend/foundation, .env symlinked) with
+                  ~/Desktop/dev/saltmarket-backend (worktree on main, .env symlinked) with
                   LEDGER=near. First batch 72-96 applied to goods.samuelowen.testnet in tx
                   3P2frBFCJFAVwQJ1gZKWsdsTXiPf4TwttEjMcmLgqZQf; reconciliation at tick 96: 0 mismatches.
                   Gas: ~0.0014 NEAR per daily batch → the 1 NEAR key allowance lasts ~12 h of continuous play.

@@ -13,7 +13,7 @@ The backend owner keeps this doc current. Ask for protocol changes; don't edit `
 
 ## 0. Ten-line summary
 
-1. `git checkout -b frontend/web origin/backend/foundation`, then `pnpm install`.
+1. `git checkout -b frontend/web origin/main`, then `pnpm install`.
 2. Run a backend: `pnpm dev:mock` (scripted, best for building screens) or `pnpm dev` (the real economy, offline). Both serve the same API on `http://127.0.0.1:3000`.
 3. Create `apps/web` (Vite + React + TS). Depend on `@saltmarket/shared` (`workspace:*`) and import schemas from `@saltmarket/shared/protocol` and helpers from `@saltmarket/shared/client`.
 4. Boot: log in (`POST /api/auth/login`), open `ws://…/ws?token=…`, wait for `hello` then `snapshot`, keep the world in a store, run `applyDelta` on every `delta`, `applyFeed` on every `feed`.
@@ -30,7 +30,7 @@ The backend owner keeps this doc current. Ask for protocol changes; don't edit `
 
 ```bash
 git fetch origin
-git checkout -b frontend/web origin/backend/foundation   # the backend lives here; branch off it
+git checkout -b frontend/web origin/main   # the backend lives here; branch off it
 pnpm install
 pnpm dev:mock        # terminal 1: scripted world (ship docks ~50 s in, storm ~3.5 min, a closed merchant)
 # or: pnpm dev       # real economy on an offline ledger (fresh world in data/world.json)
