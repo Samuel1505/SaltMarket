@@ -18,6 +18,8 @@ export interface LedgerAdapter {
    * A real chain keeps its own state and does not implement this (the server reads it instead).
    */
   restore?(confirmed: Map<string, bigint>, lastTickTo: number): void;
+  /** Optional: the ledger's own settlement cursor (tickTo of the last applied batch, null if none). */
+  cursorTick?(): Promise<number | null>;
 }
 
 /** In-process ledger for dev, tests, and the offline demo. Fake but well-formed receipts. */
@@ -66,3 +68,7 @@ function hash(s: string): string {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
   return (h >>> 0).toString(16).padStart(8, '0');
 }
+
+export * from './ops.js';
+export * from './near.js';
+export { ModelContract } from './model.js';

@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.24.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm --filter @saltmarket/server dev",
     "dev:mock": "pnpm --filter @saltmarket/server dev:mock",
@@ -18,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck && tsc -p scripts/tsconfig.json",
-    "lint": "tsx scripts/lint-rules.ts"
+    "lint": "tsx scripts/lint-rules.ts",
+    "near:check": "tsx scripts/near-check.ts"
   },
   "devDependencies": {
     "@saltmarket/shared": "workspace:*",
@@ -26,6 +29,8 @@
     "@types/node": "^24.0.0",
     "tsx": "^4.20.0",
     "typescript": "~5.9.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "@saltmarket/chain": "workspace:*",
+    "near-api-js": "7.4.0"
   }
 }

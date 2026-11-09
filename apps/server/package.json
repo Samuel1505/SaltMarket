@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --exclude 'data/**' src/main.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env --exclude 'data/**' src/main.ts",
     "dev:mock": "tsx watch src/main.ts --mock",
-    "start": "tsx src/main.ts",
+    "start": "tsx --env-file-if-exists=../../.env src/main.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

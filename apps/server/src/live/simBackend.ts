@@ -15,12 +15,11 @@ import {
   marksSupply, medianPrice, RULES_FILE, scheduleEvent, sellsOf, step, Timelapse, TOWN_FUND, volume, yieldFor,
   type Command, type SimEvent, type WorldState,
 } from '@saltmarket/sim';
-import type { LedgerAdapter, SettlementBatch, TokenId } from '@saltmarket/chain';
+import { classifyError, type LedgerAdapter, type SettlementBatch, type TokenId } from '@saltmarket/chain';
 import { fail, type CommandOutcome, type GameBackend, type GameCommand, type Result, type TimelapseEmit, type TimelapseHandle, type TimelapseOptions } from '../backend.js';
 
 const E = ECONOMY;
 const TPD = E.time.ticksPerDay;
-const SETTLE_EVERY = 6;
 
 type StoredBatch = { batchId: string; tickFrom: number; tickTo: number; deltas: { account: string; token: TokenId; delta: string }[] };
 type Snapshot = {
@@ -41,6 +40,8 @@ export type SimOptions = {
   strictInvariants?: boolean;
   timelapseFrameMs?: number;
   log?: (msg: string) => void;
+  /** Ticks per settlement window (SETTLE_EVERY_TICKS). Default 6; on NEAR prefer 24 (one tx per game day). */
+  settleEveryTicks?: number;
 };
 
 const fmt = (p: number) => { const v = p / 100; return Number.isInteger(v) ? `${v}` : v.toFixed(1); };
@@ -69,6 +70,9 @@ export class SimBackend implements GameBackend {
   private pending: { batch: SettlementBatch; resent: boolean }[] = [];
   private inFlight = false;
   private stuck: string | null = null;
+  /** Resolves once the ledger cursor has been checked; nothing is sent before. */
+  ready: Promise<void> = Promise.resolve();
+  private verified = false;
   private reconciliation: { tick: number | null; mismatches: number } = { tick: null, mismatches: 0 };
   private activeTimelapses = 0;
   private readonly log: (m: string) => void;
@@ -80,7 +84,8 @@ export class SimBackend implements GameBackend {
     // A MemoryLedger lost its state with the process; bring it back to what had been confirmed.
     // (A real chain keeps its own state; restore() is a no-op there.)
     this.opts.ledger.restore?.(this.confirmedBalances(), this.lastSettledTick);
-    if (this.pending.length) queueMicrotask(() => this.pump());
+    // Before sending anything, make sure the ledger is where we think it is (stray batches, old contract).
+    this.ready = this.verifyCursor().then(() => this.pump());
     for (const [token, pid] of Object.entries(this.persistedTokens)) this.tokens.set(token, pid);
     this.prevOfferIds = new Set(this.offers(null).map((o) => o.id));
   }
@@ -121,7 +126,7 @@ export class SimBackend implements GameBackend {
       this.paused = true;
     }
     this.pushFeed(ev, 'step');
-    if (this.s.tick % SETTLE_EVERY === 0) this.settle();
+    if (this.s.tick % (this.opts.settleEveryTicks ?? 6) === 0) this.settle();
     if (this.opts.snapshotPath && this.s.tick % TPD === 0) this.saveSnapshot();
     const ids = new Set(this.offers(null).map((o) => o.id));
     this.removedOfferIds = [...this.prevOfferIds].filter((id) => !ids.has(id));
@@ -481,6 +486,8 @@ export class SimBackend implements GameBackend {
     const tickFrom = this.lastSettledTick;
     const tickTo = this.s.tick;
     if (tickTo <= tickFrom) return;
+    // C6: nothing changed → no transaction; the next non-empty batch spans the whole gap (still contiguous).
+    if (deltas.length === 0) return;
     const batch: SettlementBatch = { batchId: `${tickFrom}-${tickTo}`, tickFrom, tickTo, deltas };
     this.record(batch);
     this.pending.push({ batch, resent: false });
@@ -501,7 +508,7 @@ export class SimBackend implements GameBackend {
 
   /** Send the oldest pending batch; on success move to the next. One in flight at a time, in order. */
   private pump(): void {
-    if (this.inFlight || this.stuck) return;
+    if (this.inFlight || this.stuck || !this.verified) return;
     const head = this.pending[0];
     if (!head) return;
     const rec = this.record(head.batch);
@@ -531,12 +538,52 @@ export class SimBackend implements GameBackend {
       },
       (err: unknown) => {
         this.inFlight = false;
+        const e = classifyError(err);
         rec.status = 'failed';
-        rec.error = err instanceof Error ? err.message : String(err);
-        // Error classification (retryable vs needs-a-human) lands with NearLedger (REQUESTS C4).
-        setTimeout(() => this.pump(), Math.min(60000, 1000 * 2 ** rec.attempts));
+        rec.error = `${e.code}${e.kind === 'fatal' ? ' (needs a human)' : ' (retrying)'}`;
+        if (e.kind === 'fatal') {
+          // Batches are contiguous: one stuck batch blocks the rest by design. Show it, don't retry forever (C4).
+          this.stuck = `stuck at ${head.batch.batchId}: ${e.code}`;
+          this.log(`ledger: ${this.stuck}: ${e.message}`);
+          return;
+        }
+        setTimeout(() => this.pump(), Math.min(60000, 1000 * 2 ** Math.min(rec.attempts, 6)));
       },
     );
+  }
+
+  /**
+   * Compare the ledger's cursor with ours before sending (REQUESTS C2/C4). The chain must be exactly at our last
+   * confirmed batch, or somewhere inside the batches we still have pending (those landed but we never heard back).
+   */
+  private async verifyCursor(): Promise<void> {
+    if (!this.opts.ledger.cursorTick) { this.verified = true; return; }
+    try {
+      const chain = await this.opts.ledger.cursorTick();
+      const confirmedTo = this.pending[0]?.batch.tickFrom ?? this.lastSettledTick;
+      const pendingEnds = new Set(this.pending.map((p) => p.batch.tickTo));
+      const neverSettled = !this.restoredLedgerState && this.settlements.length === 0;
+      const ok = neverSettled ? chain === null : chain === confirmedTo || (chain !== null && pendingEnds.has(chain));
+      if (!ok) {
+        this.stuck = neverSettled
+          ? `contract already has settlements up to tick ${chain}, but this world has never settled; use a fresh contract or reset its cursor`
+          : `contract cursor ${chain ?? 'none'} does not match the server's last confirmed tick ${confirmedTo}`;
+        this.log(`ledger: ${this.stuck}`);
+      } else if (chain !== null) {
+        // Pending batches the chain already applied will come back applied:false; mark them as resent.
+        for (const p of this.pending) if (p.batch.tickTo <= chain) p.resent = true;
+      }
+    } catch (err) {
+      this.log(`ledger: could not read the contract cursor (${classifyError(err).code}); will retry`);
+      await new Promise((r) => setTimeout(r, 5000));
+      return this.verifyCursor();
+    }
+    this.verified = true;
+  }
+
+  /** Why settlement is stopped, if it is (for the Judge panel and logs). */
+  ledgerProblem(): string | null {
+    return this.stuck;
   }
 
   /** Balances the ledger has confirmed: lastSettled minus everything still pending. */
