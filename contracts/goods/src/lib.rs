@@ -24,7 +24,7 @@ use near_sdk::json_types::U128;
 use near_sdk::store::{IterableMap, LookupMap, LookupSet};
 use near_sdk::{env, near, require, AccountId, NearToken, PanicOnDefault, Promise};
 
-mod core;
+mod mt_core;
 pub mod events;
 mod settle;
 mod storage;
