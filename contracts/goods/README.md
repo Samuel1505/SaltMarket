@@ -160,3 +160,13 @@ The server then needs, in its local `.env` only: `NEAR_NETWORK=testnet`, `NEAR_C
 Account created in tx `FuVr65dQSy1mzWzZqHiu1n7w6862QRzta4xgQy95EWga` with 5 NEAR. After init, `storage_report` showed 2.41 NEAR locked by code and about 207 accounts affordable.
 
 **Don't run test settlements against this contract.** The first `settle` sets the cursor, and the server's real first batch (`0-6`) would then be ignored as a replay. Use the sandbox tests for experiments. If a stray batch does land: `pause`, then `reset_settlement_cursor` (1 yocto), then `unpause`.
+
+**Server signing key (testnet):** function-call key `ed25519:FAxxdMen8hfmhwYApHnSsdcDQHJYgKPTkgdMGYmuwVA9` on `samuelowen.testnet`. It can call only `goods.samuelowen.testnet` methods `settle, pause, register_accounts, mt_mint, mt_burn`, with a 1 NEAR gas allowance. Added in tx `88Qpa6bcvisdGVRXtJnZu6jFWUpnZBBvJrEzwEsQ6T4z`. The secret is only in the local legacy keychain file `~/.near-credentials/testnet/samuelowen.testnet/ed25519_FAxx….json`, outside the repo. For the server's local `.env` (values per REQUESTS.md C7):
+
+```
+NEAR_NETWORK=testnet
+NEAR_RPC_URL=https://test.rpc.fastnear.com
+NEAR_CONTRACT_ID=goods.samuelowen.testnet
+NEAR_AUTHORITY_ID=samuelowen.testnet
+NEAR_CREDENTIALS_FILE=/Users/mac/.near-credentials/testnet/samuelowen.testnet/ed25519_FAxxdMen8hfmhwYApHnSsdcDQHJYgKPTkgdMGYmuwVA9.json
+```
