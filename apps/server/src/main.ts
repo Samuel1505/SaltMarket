@@ -68,6 +68,9 @@ else {
 }
 
 const { app } = await buildApp(backend, { judge, autoTick: true, validateOutgoing: 'log', logger: { level: process.env.LOG_LEVEL ?? 'info' } as never });
+// Last line of defence: a stray background error (e.g. an RPC hiccup in monitoring) is logged, never fatal.
+process.on('unhandledRejection', (err) => console.error('unhandled background error (server keeps running):', err instanceof Error ? err.message : err));
+
 const shutdown = async () => {
   live?.saveSnapshot();
   await app.close();

@@ -125,6 +125,11 @@ export class NearLedger implements LedgerAdapter {
     return BigInt(v ?? '0');
   }
 
+  async balancesOf(account: string, tokens: TokenId[]): Promise<bigint[]> {
+    const vs = await this.contract.batchBalanceOf(this.accountId(account), tokens);
+    return tokens.map((_, i) => BigInt(vs[i] ?? '0'));
+  }
+
   /** The contract's settlement cursor: the tickTo of the last batch it applied (null if none). */
   async cursorTick(): Promise<number | null> {
     return (await this.contract.cursor()).last_tick_to;

@@ -12,6 +12,8 @@ export interface LedgerAdapter {
   /** Apply a batch of net deltas. Must be idempotent by batchId (a retry never double-applies). */
   settle(batch: SettlementBatch): Promise<Receipt>;
   balanceOf(account: string, token: TokenId): Promise<bigint>;
+  /** Optional: several tokens of one account in a single read (fewer RPC calls). */
+  balancesOf?(account: string, tokens: TokenId[]): Promise<bigint[]>;
   explorerUrl(kind: 'tx' | 'account', id: string): string | null;
   /**
    * Optional: bring an in-process ledger back to the server's last confirmed state after a restart.

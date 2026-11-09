@@ -45,6 +45,8 @@ export type SimOptions = {
   log?: (msg: string) => void;
   /** Ticks per settlement window (SETTLE_EVERY_TICKS). Default 6; on NEAR prefer 24 (one tx per game day). */
   settleEveryTicks?: number;
+  /** Pause between per-account reads during the daily reconciliation (public RPCs rate-limit bursts). */
+  reconcileSpacingMs?: number;
   /** Social login verifier (Privy). Unset → social login answers SOCIAL_UNAVAILABLE. */
   social?: SocialVerifier;
 };
@@ -630,14 +632,32 @@ export class SimBackend implements GameBackend {
     return b;
   }
 
+  /**
+   * Daily check that the ledger holds exactly the balances we settled. Monitoring only: it must never throw or crash
+   * the server (the game never depends on the chain being reachable), and it reads one account at a time with
+   * batched token reads where the ledger supports it, spaced out to stay under public RPC rate limits.
+   */
   private async reconcile(expected: Map<string, bigint>, tick: number): Promise<void> {
-    let mismatches = 0;
-    for (const [k, v] of expected) {
-      const [account, token] = k.split('|') as [string, TokenId];
-      if ((await this.opts.ledger.balanceOf(account, token)) !== v) mismatches += 1;
+    try {
+      const byAccount = new Map<string, [TokenId, bigint][]>();
+      for (const [k, v] of expected) {
+        const [account, token] = k.split('|') as [string, TokenId];
+        byAccount.set(account, [...(byAccount.get(account) ?? []), [token, v]]);
+      }
+      let mismatches = 0;
+      for (const [account, entries] of byAccount) {
+        const tokens = entries.map(([t]) => t);
+        const got = this.opts.ledger.balancesOf
+          ? await this.opts.ledger.balancesOf(account, tokens)
+          : await Promise.all(tokens.map((t) => this.opts.ledger.balanceOf(account, t)));
+        entries.forEach(([, want], i) => { if (got[i] !== want) mismatches += 1; });
+        if (this.opts.ledger.balancesOf) await new Promise((r) => setTimeout(r, this.opts.reconcileSpacingMs ?? 250));
+      }
+      this.reconciliation = { tick, mismatches };
+      if (mismatches) this.log(`reconciliation: ${mismatches} mismatched balances at tick ${tick}`);
+    } catch (err) {
+      this.log(`reconciliation skipped at tick ${tick} (${classifyError(err).code}); will try again next day`);
     }
-    this.reconciliation = { tick, mismatches };
-    if (mismatches) this.log(`reconciliation: ${mismatches} mismatched balances at tick ${tick}`);
   }
 
   // ───────────── JSON snapshot (replaces SQLite) ─────────────

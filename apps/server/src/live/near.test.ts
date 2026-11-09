@@ -78,3 +78,20 @@ describe('live server → NearLedger → goods contract (model)', () => {
     expect(b.judgeLedger(5).settlements.some((x) => x.error?.includes('needs a human'))).toBe(true);
   });
 });
+
+describe('chain outages never crash the server', () => {
+  it('a rate-limited RPC during the daily reconciliation is logged and skipped', async () => {
+    const chain = new ModelContract();
+    const l = new NearLedger(cfg, chain);
+    const logs: string[] = [];
+    const b = new SimBackend({ seed: 14, ledger: l, strictInvariants: true, settleEveryTicks: 24, reconcileSpacingMs: 0, log: (m) => logs.push(m) });
+    await b.ready;
+    chain.batchBalanceOf = async () => { throw new Error('ProviderError: {"code": -429, "message": "Rate limits exceeded"}'); };
+    for (let i = 0; i < 24; i++) b.step();
+    await flush();
+    expect(logs.some((m) => m.includes('reconciliation skipped at tick 24'))).toBe(true);
+    expect(b.judgeLedger(1).settlements[0]?.status).toBe('settled'); // settlement itself went through
+    for (let i = 0; i < 24; i++) b.step(); // and the game keeps going
+    expect(b.world().tick).toBe(48);
+  });
+});
