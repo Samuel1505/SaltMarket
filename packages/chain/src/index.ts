@@ -13,6 +13,11 @@ export interface LedgerAdapter {
   settle(batch: SettlementBatch): Promise<Receipt>;
   balanceOf(account: string, token: TokenId): Promise<bigint>;
   explorerUrl(kind: 'tx' | 'account', id: string): string | null;
+  /**
+   * Optional: bring an in-process ledger back to the server's last confirmed state after a restart.
+   * A real chain keeps its own state and does not implement this (the server reads it instead).
+   */
+  restore?(confirmed: Map<string, bigint>, lastTickTo: number): void;
 }
 
 /** In-process ledger for dev, tests, and the offline demo. Fake but well-formed receipts. */
@@ -47,6 +52,12 @@ export class MemoryLedger implements LedgerAdapter {
 
   explorerUrl(): string | null {
     return null;
+  }
+
+  /** After a process restart this ledger is empty; reload the confirmed balances. No-op if it still has state. */
+  restore(confirmed: Map<string, bigint>): void {
+    if (this.applied.size > 0 || this.balances.size > 0) return;
+    for (const [k, v] of confirmed) if (v !== 0n) this.balances.set(k, v);
   }
 }
 

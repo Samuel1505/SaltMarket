@@ -13,6 +13,8 @@
     "sim:week": "tsx scripts/sim-week.ts",
     "sim:tune": "tsx scripts/sim-tune.ts",
     "demo:seed": "tsx scripts/seed-demo.ts",
+    "contracts:build": "cd contracts/goods && cargo near build non-reproducible-wasm",
+    "contracts:test": "cd contracts/goods && cargo test --lib && cargo test --test sandbox",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck && tsc -p scripts/tsconfig.json",

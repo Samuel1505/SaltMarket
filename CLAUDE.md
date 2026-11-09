@@ -198,8 +198,13 @@ What works:       protocol v0.1.0; pnpm dev (real sim, MemoryLedger, JSON snapsh
                   expectations), flood, Hall competition, closure/invest/rescue. pnpm sim:headless, sim:tune,
                   sim:storm, sim:week, demo:seed. Docs updated (no SQLite; MERCHANT_* events vs reason codes).
 In progress:      —
-Next up:          Social login options + pick (report by end of Nov 10). Then NearLedger, ONLY after the human
-                  confirms the testnet account exists. Optional: tidy unused imports in simBackend.ts.
+Next up:          Social login options + pick (report by end of Nov 10). Then NearLedger (REQUESTS C1, C3, C4,
+                  C7) ONLY after the human confirms; do not send any settlement to goods.samuelowen.testnet before. Optional: tidy unused imports in simBackend.ts.
+Contract requests: C2 DONE (snapshot stores the settlement cursor + unconfirmed batches; batches are sent in
+                  order, one at a time; an unexpected replay stops settlement and marks the ledger degraded).
+                  C8 DONE (contracts:build / contracts:test). C1, C3, C4 (error classes), C7 come with NearLedger.
+                  Note: snapshots without a ledger section (older ones, demo:seed output) settle every balance in
+                  their first batch, so they must only meet a fresh contract.
 Known issues:     5 always-on bot players still break the money checks (free gathering → oversupplied Captain;
                   see TUNING_LOG). Storm → Captain short visit is seed-dependent (2 of 10 seeds).
                   History endpoint returns all venues combined (venueId: null).
