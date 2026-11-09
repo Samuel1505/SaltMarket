@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ServerMessage, WorldSnapshot, WorldDelta, type ServerMessage as SM } from '@saltmarket/shared/protocol';
-import { buildApp } from '../app.js';
+import { describe, expect, it } from 'vitest';
+import { WorldDelta, WorldSnapshot } from '@saltmarket/shared/protocol';
+import { conformanceSuite } from '../conformance.js';
 import { MockBackend } from './mockBackend.js';
 
 describe('mock backend stays protocol-valid', () => {
@@ -38,48 +38,4 @@ describe('mock backend stays protocol-valid', () => {
   });
 });
 
-describe('transport', () => {
-  const backend = new MockBackend({ timelapseFrameMs: 2 });
-  let ctx: Awaited<ReturnType<typeof buildApp>>;
-  let url = '';
-  beforeAll(async () => {
-    ctx = await buildApp(backend, { judge: true, autoTick: false, validateOutgoing: 'throw' });
-    await ctx.app.listen({ port: 0, host: '127.0.0.1' });
-    const addr = ctx.app.server.address();
-    url = typeof addr === 'object' && addr ? `127.0.0.1:${addr.port}` : '';
-  });
-  afterAll(() => ctx.app.close());
-
-  it('serves REST in the fixed envelope', async () => {
-    const login = await ctx.app.inject({ method: 'POST', url: '/api/auth/login', payload: { provider: 'guest' } });
-    expect(login.json().ok).toBe(true);
-    expect((await ctx.app.inject({ url: '/api/world' })).json().ok).toBe(true);
-    expect((await ctx.app.inject({ url: '/api/npcs/nobody/explain' })).statusCode).toBe(404);
-    expect((await ctx.app.inject({ url: '/api/market/fish/history?days=5' })).json().data.points.length).toBeGreaterThan(10);
-    expect((await ctx.app.inject({ method: 'POST', url: '/api/dev/event', payload: { kind: 'storm' } })).json().ok).toBe(true);
-    expect((await ctx.app.inject({ url: '/api/judge/ledger' })).json().data.mode).toBe('memory');
-  });
-
-  it('speaks the WS protocol: hello, snapshot, ack, delta, timelapse', async () => {
-    const login = (await ctx.app.inject({ method: 'POST', url: '/api/auth/login', payload: { displayName: 'Ws' } })).json();
-    const ws = new WebSocket(`ws://${url}/ws?token=${login.data.token}`);
-    const got: SM[] = [];
-    ws.onmessage = (e) => got.push(ServerMessage.parse(JSON.parse(String(e.data))));
-    await new Promise((r) => (ws.onopen = r));
-    const wait = async (pred: (m: SM) => boolean) => {
-      for (let i = 0; i < 200; i++) { const m = got.find(pred); if (m) return m; await new Promise((r) => setTimeout(r, 10)); }
-      throw new Error('timeout');
-    };
-    await wait((m) => m.t === 'snapshot');
-    ws.send(JSON.stringify({ t: 'gather', cmdId: 'g1', node: 'grove' }));
-    expect(await wait((m) => m.t === 'ack' && m.cmdId === 'g1')).toMatchObject({ ok: true });
-    ws.send(JSON.stringify({ t: 'fly', cmdId: 'x1' }));
-    expect(await wait((m) => m.t === 'ack' && m.cmdId === 'x1')).toMatchObject({ ok: false, code: 'BAD_REQUEST' });
-    ctx.tickOnce();
-    await wait((m) => m.t === 'tick');
-    ws.send(JSON.stringify({ t: 'timelapse', cmdId: 't1', action: 'start', shocks: [{ kind: 'storm', day: 2 }] }));
-    await wait((m) => m.t === 'timelapse' && m.phase === 'done');
-    expect(got.filter((m) => m.t === 'timelapse' && m.phase === 'frame').length).toBe(28);
-    ws.close();
-  });
-});
+conformanceSuite('mock', (o) => new MockBackend({ timelapseFrameMs: o.timelapseFrameMs }));
