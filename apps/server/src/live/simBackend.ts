@@ -12,7 +12,7 @@ import {
 } from '@saltmarket/shared/protocol';
 import {
   addPlayer, applyCommand, assertInvariants, burnMintRatio, buysOf, CAPTAIN, checkInvariants, createWorld, forceBroke, LABEL,
-  marksSupply, medianPrice, RULES_FILE, scheduleEvent, sellsOf, step, TOWN_FUND, volume, yieldFor,
+  marksSupply, medianPrice, RULES_FILE, scheduleEvent, sellsOf, step, Timelapse, TOWN_FUND, volume, yieldFor,
   type Command, type SimEvent, type WorldState,
 } from '@saltmarket/sim';
 import type { LedgerAdapter, SettlementBatch, TokenId } from '@saltmarket/chain';
@@ -226,77 +226,24 @@ export class SimBackend implements GameBackend {
   startTimelapse(o: TimelapseOptions, emit: TimelapseEmit): Result<TimelapseHandle> {
     if (this.activeTimelapses >= 3) return fail('TIMELAPSE_BUSY', 'The harbor clerk is busy. Try the time-lapse again in a minute.');
     const id = `tl-${randomUUID().slice(0, 8)}`;
-    const totalTicks = o.days * TPD;
-    const every = E.timelapse.frameEveryTicks;
-    const frameMs = this.opts.timelapseFrameMs ?? Math.round((o.wallSeconds * 1000) / Math.floor(totalTicks / every));
-    // Sandbox: a deep clone. It has no ledger and nothing in it writes back to the live world.
-    const sb: WorldState = structuredClone(this.s);
-    const t0 = sb.tick;
-    const closeAt = new Map<number, { npcId: string; investAt: number | null }>();
-    for (const sh of o.shocks) {
-      const at = t0 + sh.day * TPD + 6;
-      if (sh.kind === 'storm') scheduleEvent(sb, 'storm', at);
-      if (sh.kind === 'flood') scheduleEvent(sb, 'flood', at, { good: sh.good, qty: sh.qty || 200 });
-      if (sh.kind === 'close_merchant') closeAt.set(at, { npcId: sh.npcId ?? 'cooper', investAt: sh.investDay !== undefined ? t0 + sh.investDay * TPD + 6 : null });
-    }
-    const investAt = new Map<number, string>();
+    // Sandbox: Timelapse deep-clones the world; nothing in it writes back to the live world or the ledger.
+    const tl = new Timelapse(this.s, o.shocks, o.days);
+    const totalTicks = tl.totalTicks;
+    const frameMs = this.opts.timelapseFrameMs ?? Math.round((o.wallSeconds * 1000) / Math.floor(totalTicks / E.timelapse.frameEveryTicks));
     let stopped = false;
-    let i = 0;
-    let peakFish = { price: 0, day: 0 };
-    const notable: string[] = [];
     this.activeTimelapses += 1;
     emit({ t: 'timelapse', timelapseId: id, phase: 'started', totalTicks });
-
     const finish = (phase: 'done' | 'stopped') => {
       if (stopped) return;
       stopped = true;
       clearInterval(timer);
       this.activeTimelapses -= 1;
-      const summary = phase === 'done' ? [
-        `Fish peaked at ${fmt(peakFish.price)} marks on day ${peakFish.day + 1} and ended the week at ${fmt(medianPrice(sb, 'fish', TPD))} marks.`,
-        `Captain Maren's ceiling ended at ${fmt(sb.ship.ceiling)} marks per cured fish.`,
-        ...notable.slice(0, 3),
-        'No patch, no tweaks: every change came from merchants reacting to stock and demand.',
-      ] : undefined;
-      emit({ t: 'timelapse', timelapseId: id, phase, totalTicks, ...(summary ? { summary } : {}) });
+      emit({ t: 'timelapse', timelapseId: id, phase, totalTicks, ...(phase === 'done' ? { summary: tl.summary() } : {}) });
     };
-
     const timer = setInterval(() => {
       if (stopped) return;
-      const notes: TimelapseFrame['notes'] = [];
-      for (let k = 0; k < every; k++) {
-        const ev = step(sb);
-        const c = closeAt.get(sb.tick);
-        if (c) { forceBroke(sb, c.npcId, ev); if (c.investAt !== null) investAt.set(c.investAt, c.npcId); }
-        const inv = investAt.get(sb.tick);
-        if (inv) {
-          addPlayer(sb, 'investor-bot', 'A local investor');
-          applyCommand(sb, 'investor-bot', { t: 'invest', npcId: inv, amountPips: E.merchants.investMin }, ev);
-        }
-        for (const e of ev) {
-          if (e.private || !['npc_decision', 'MERCHANT_CLOSED', 'MERCHANT_REOPENED', 'MERCHANT_RESCUED', 'captain_ceiling', 'event_start', 'event_end'].includes(e.kind)) continue;
-          const name = e.npcId ? (e.npcId === CAPTAIN ? 'Captain Maren' : sb.accounts[e.npcId]?.name ?? e.npcId) : 'Town';
-          notes.push({ ...(e.npcId ? { npcId: e.npcId } : {}), name, code: e.kind, text: e.text });
-          if (e.kind.startsWith('MERCHANT_')) notable.push(e.text);
-        }
-      }
-      i += 1;
-      const off = i * every;
-      const prices = Object.fromEntries(GOODS.map((g) => [g, medianPrice(sb, g, every * 2)])) as Record<Good, number>;
-      if (prices.fish > peakFish.price) peakFish = { price: prices.fish, day: Math.floor(off / TPD) };
-      emit({
-        t: 'timelapse', timelapseId: id, phase: 'frame', totalTicks,
-        frame: {
-          tickOffset: off, day: Math.floor(off / TPD), hour: sb.tick % TPD, prices,
-          volume: Object.fromEntries(GOODS.map((g) => [g, volume(sb, g, every).qty])) as Record<Good, number>,
-          merchants: Object.values(sb.npcs).map((n) => ({ id: n.id, name: sb.accounts[n.id]!.name, pursePips: sb.accounts[n.id]!.marks, status: n.status })),
-          captainCeilingPips: sb.ship.ceiling, shipDocked: sb.ship.docked, marksSupplyPips: marksSupply(sb),
-          burnMintRatio: burnMintRatio(sb, 1),
-          events: [...new Set(sb.events.filter((e) => e.start <= sb.tick && sb.tick < e.end).map((e) => e.kind))],
-          notes: notes.slice(-6),
-        },
-      });
-      if (off >= totalTicks) finish('done');
+      emit({ t: 'timelapse', timelapseId: id, phase: 'frame', totalTicks, frame: tl.next() });
+      if (tl.done) finish('done');
     }, frameMs);
     return { ok: true, data: { id, totalTicks, stop: () => finish('stopped') } };
   }

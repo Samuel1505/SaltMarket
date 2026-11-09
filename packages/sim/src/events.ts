@@ -1,7 +1,7 @@
 // Shocks and merchant lifecycle: storms and other events, closures, rescues, floods (ECONOMY §8.6, GAME_DESIGN §7).
 // The judge buttons, the time-lapse toggles, and natural causes all go through these same functions.
 import { ECONOMY, ROSTER, type Good } from '@saltmarket/shared/config';
-import { burn, createGood, transfer } from './ledger.js';
+import { burn, createGood, destroyGood, transfer } from './ledger.js';
 import { cancelAllOf, placeOrder } from './market.js';
 import { fmt } from './pricing/merchant-rules.js';
 import { HARBOR, TOWN_FUND, type Npc, type Reason, type ShockKind, type SimEvent, type WorldState } from './types.js';
@@ -32,7 +32,14 @@ export function tickEvents(s: WorldState, ev: SimEvent[]): void {
       ev.push({ kind: 'event_start', text: LABEL[e.kind].start, notable: true });
       if (e.kind === 'flood') floodMarket(s, e.good ?? 'timber', e.qty ?? 200);
     }
-    if (e.end === s.tick) ev.push({ kind: 'event_end', text: LABEL[e.kind].end, notable: true });
+    if (e.end === s.tick) {
+      ev.push({ kind: 'event_end', text: LABEL[e.kind].end, notable: true });
+      // The flood trader sails away with whatever didn't sell (goods leave town; logged as destroyed).
+      if (e.kind === 'flood' && s.accounts['flood-trader']) {
+        cancelAllOf(s, 'flood-trader');
+        for (const g of Object.keys(s.accounts['flood-trader'].inv) as Good[]) destroyGood(s, 'flood-trader', g, s.accounts['flood-trader'].inv[g]);
+      }
+    }
   }
   s.events = s.events.filter((e) => e.end > s.tick - 7 * E.time.ticksPerDay);
 }

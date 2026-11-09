@@ -46,7 +46,8 @@ export function runNpc(s: WorldState, npc: Npc, ev: SimEvent[]): void {
   if (a === 'fisherman' || a === 'salt_panner' || a === 'woodcutter') {
     const good = rule.sells[0]!;
     {
-      const perDay = dailyOutput({ archetype: a, medianPrice: median[good], weatherFactor: weatherFactor(s), eventFactor: a === 'salt_panner' && isActive(s, 'salt_glut') ? 1.6 : 1, pausedLowPrice: npc.prodPaused, stock: held(good) });
+      // Scenario tuning S5: producers react to the last day's price, not two days'.
+      const perDay = dailyOutput({ archetype: a, medianPrice: medianPrice(s, good, E.time.ticksPerDay), weatherFactor: weatherFactor(s), eventFactor: a === 'salt_panner' && isActive(s, 'salt_glut') ? 1.6 : 1, pausedLowPrice: npc.prodPaused, stock: held(good) });
       npc.prodCarry += Math.round((perDay * 1000) / E.time.ticksPerDay);
       const whole = Math.floor(npc.prodCarry / 1000);
       if (whole > 0) { createGood(s, npc.id, good, whole); npc.prodCarry -= whole * 1000; }
@@ -108,6 +109,7 @@ export function runNpc(s: WorldState, npc: Npc, ev: SimEvent[]): void {
   }
 
   // Headline reason: the most notable decision this tick.
-  const headline = reasons.find((r) => r.code !== 'STEADY') ?? reasons[0];
+  const PRIORITY = ['STORM_SUPPLY_CUT', 'MARGIN_NEGATIVE_PAUSE_BUY', 'MARKET_GLUT_LOWER_BID', 'SWITCH_VENUE_LOWER_FEE', 'PRICE_BELOW_COST_PAUSE'];
+  const headline = PRIORITY.map((c) => reasons.find((r) => r.code === c)).find(Boolean) ?? reasons.find((r) => r.code !== 'STEADY') ?? reasons[0];
   if (headline) setReason(s, npc, headline, ev);
 }

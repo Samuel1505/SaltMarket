@@ -9,3 +9,4 @@ export * from './events.js';
 export * from './market.js';
 export * from './pricing/merchant-rules.js';
 export { policyFor } from './npcs/guard.js';
+export * from './timelapse.js';

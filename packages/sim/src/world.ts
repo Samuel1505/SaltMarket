@@ -49,3 +49,8 @@ export function addPlayer(s: WorldState, id: string, name: string): void {
   for (const g of GOODS) createGood(s, id, g, E.player.startInventory[g]);
   s.players[id] = { id, joinedTick: s.tick, readyAt: s.tick, gatheredToday: 0, jobs: [], level: 1, arrears: 0, lastHarborBuyTick: -1, pairTrades: {} };
 }
+
+/** Demo/test seeding only: grant marks to an account (a logged mint, so conservation still holds). */
+export function grantMarks(s: WorldState, id: string, pips: number): void {
+  mint(s, id, pips);
+}
