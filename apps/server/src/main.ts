@@ -3,6 +3,8 @@
 //   pnpm dev:mock  → scripted protocol-valid data (TEAM_SPLIT §3). Judge routes on unless JUDGE_MODE=0.
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { MemoryLedger, NearLedger, type LedgerAdapter } from '@saltmarket/chain';
 import { buildApp } from './app.js';
 import { socialVerifierFromEnv } from './auth.js';
@@ -17,6 +19,9 @@ const seed = Number(process.env.SEED ?? 42);
 const judge = mock ? process.env.JUDGE_MODE !== '0' : process.env.JUDGE_MODE === '1';
 
 const ledgerMode = process.env.LEDGER ?? 'memory';
+// Snapshot paths are relative to the repo root (where `pnpm demo:seed` writes), not the server's working dir.
+const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+const snapshotPath = (() => { const p = process.env.SNAPSHOT_PATH ?? 'data/world.json'; return isAbsolute(p) ? p : resolve(REPO_ROOT, p); })();
 
 /** LEDGER=near: settle to the goods contract (REQUESTS C7). The key comes from env or a key file; never logged. */
 function nearLedger(): NearLedger {
@@ -57,7 +62,8 @@ else {
   const settleEveryTicks = Number(process.env.SETTLE_EVERY_TICKS ?? (ledgerMode === 'near' ? 24 : 6));
   const social = socialVerifierFromEnv(process.env);
   console.log(`social login: ${social ? social.mode : 'off (guest only)'}`);
-  live = new SimBackend({ seed, ledger, settleEveryTicks, ...(social ? { social: social.verifier } : {}), snapshotPath: process.env.SNAPSHOT_PATH ?? 'data/world.json', log: (m) => console.log(m) });
+  console.log(`world snapshot: ${snapshotPath}`);
+  live = new SimBackend({ seed, ledger, settleEveryTicks, ...(social ? { social: social.verifier } : {}), snapshotPath, log: (m) => console.log(m) });
   backend = live;
 }
 
