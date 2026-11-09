@@ -30,7 +30,7 @@ If you are behind at the end of any phase, apply the **cut list** (§ bottom) ra
 - [ ] Read the organizers' starting points (NEP-245, near-dapp skill, intents basics) and begin `NEAR_INTEGRATION.md` §10.
 - [ ] With the human's OK, install Emil Kowalski's skills and record versions in `docs/FRONTEND.md` §10; write `docs/FRONTEND_NOTES.md`.
 - [ ] Initialize pnpm monorepo per `CLAUDE.md` §5; TypeScript strict; ESLint + Prettier; Vitest.
-- [ ] `.gitignore` includes `.env*`, `node_modules`, SQLite files, build outputs, `*.key`, `credentials/`.
+- [ ] `.gitignore` includes `.env*`, `node_modules`, `data/` snapshots, build outputs, `*.key`, `credentials/`.
 - [ ] `.env.example` with names only.
 - [ ] `packages/shared`: types, zod schemas, `config/economy.ts` per `ECONOMY.md` §13.
 - [ ] Commands from `CLAUDE.md` §10 stubbed and runnable.
@@ -73,7 +73,7 @@ If you are behind at the end of any phase, apply the **cut list** (§ bottom) ra
 
 **Tasks**
 - [ ] Fastify server, tick loop with speed control, WS + REST per `ARCHITECTURE.md` §4.
-- [ ] SQLite event log + snapshots; boot/restore.
+- [ ] In-memory world + JSON snapshot; boot/restore (replaces SQLite, approved 2026-11-09).
 - [ ] `GuestAuth` and session handling.
 - [ ] Design tokens (`tokens.css`, `tokens.motion.ts`) and UI primitives first (`docs/FRONTEND.md` §8), then screens.
 - [ ] Web client: Town view, Market panel with sparklines, Stall panel, NPC cards with reasoning, Event feed, Hall screen, Leaderboard.

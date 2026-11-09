@@ -28,7 +28,7 @@ How Saltmarket uses NEAR, kept deliberately **invisible** to players. This docum
 | Account identity for players | Onchain account created behind social login | "Players own things" without crypto UX |
 | NPC wallets | Onchain sub-accounts | "NPCs with wallets" |
 | Fees and tax flows | Settled as transfers to Hall owner / Town Fund accounts | Visible fee income |
-| Event feed, price history | Off-chain (SQLite) | Not needed onchain |
+| Event feed, price history | Off-chain (server memory + JSON snapshot) | Not needed onchain |
 
 Be honest about this split in the README: **off-chain matching with onchain settlement and ownership**, batched.
 

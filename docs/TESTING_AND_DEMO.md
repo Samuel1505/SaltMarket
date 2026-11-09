@@ -68,7 +68,7 @@ Static test: no merchant price computation outside `pricing/merchant-rules.ts`. 
 | Day +1 to +2 | Cured fish supply thins; at next ship visit the Captain's fill is below 100%; his ceiling rises (reasoning shown) |
 | Day +2 | Player curers with fish stockpiles see higher margins; Hall volume in fish rises; hall owner fee income up |
 | Day +3 to +5 | Fishermen resume normal output; fish price decays toward the baseline; Smokehouse resumes; Captain ceiling begins to relax |
-| By day +6 | Fish median within ±20% of the pre-storm baseline; no permanent bankruptcies beyond what replacement handles; invariants hold throughout |
+| By day +6 | Fish median within ±20% of the pre-storm baseline; every closed merchant is reopened by an investor or a `MERCHANT_RESCUED` rescue; invariants hold throughout |
 
 **Report:** `pnpm sim:storm --seed 42` prints a table of price, volume, Captain ceiling, and key NPC reasoning for days −2 to +6, and exits non-zero if expectations fail.
 

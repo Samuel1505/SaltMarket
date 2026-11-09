@@ -103,7 +103,9 @@ Each archetype is a small module under `packages/sim/src/npcs/<archetype>.ts` ex
 - Reasoning strings are generated from templates keyed by `ReasonCode` with factor interpolation. Template list lives in `packages/sim/src/npcs/reasons.ts`. Add a template whenever you add a reason code.
 - **Test:** every action emitted by any NPC must have a non-empty `reasoning.text` (property test).
 
-Example reason codes: `LOW_STOCK_RAISE_ASK`, `EXCESS_STOCK_DISCOUNT`, `PRICE_BELOW_COST_PAUSE`, `MARGIN_NEGATIVE_PAUSE_BUY`, `STORM_SUPPLY_CUT`, `SHIP_NEAR_HOLD_STOCK`, `SWITCH_VENUE_LOWER_FEE`, `MERCHANT_CLOSED`, `MERCHANT_REOPENED`, `CAPTAIN_CEILING_RAISE`, `CAPTAIN_CEILING_LOWER`, `DEMAND_UP_RAISE_ASK`, `MARKET_GLUT_LOWER_BID`, `SHOP_CLOSED_BROKE`, `INVESTMENT_RECEIVED_REOPEN`, `RESCUED_BY_TOWN_FUND`.
+Example reason codes: `LOW_STOCK_RAISE_ASK`, `EXCESS_STOCK_DISCOUNT`, `PRICE_BELOW_COST_PAUSE`, `MARGIN_NEGATIVE_PAUSE_BUY`, `STORM_SUPPLY_CUT`, `SHIP_NEAR_HOLD_STOCK`, `SWITCH_VENUE_LOWER_FEE`, `CAPTAIN_CEILING_RAISE`, `CAPTAIN_CEILING_LOWER`, `DEMAND_UP_RAISE_ASK`, `MARKET_GLUT_LOWER_BID`, `SHOP_CLOSED_BROKE`, `INVESTMENT_RECEIVED_REOPEN`, `RESCUED_BY_TOWN_FUND`.
+
+Reason codes explain an NPC's own decision. The lifecycle **feed events** are separate and fixed: `MERCHANT_CLOSED` (with reason `SHOP_CLOSED_BROKE`), `MERCHANT_REOPENED` (with `INVESTMENT_RECEIVED_REOPEN`), `MERCHANT_RESCUED` (with `RESCUED_BY_TOWN_FUND`).
 
 ### 5.1 Where the rules live: one readable file
 
@@ -171,7 +173,7 @@ Organizers' requirement: *if a merchant goes broke, it closes its shop until som
 - **Trigger:** cash below one day's living cost for 3 consecutive days and no sellable inventory.
 - **Closed state (`CLOSED`):** cancel open orders; stop buying, selling, and producing; the NPC card shows **"Closed: needs investment"** with the minimum amount. Emit `MERCHANT_CLOSED` + reasoning `SHOP_CLOSED_BROKE` ("Out of cash after the storm. Closing until someone backs me.").
 - **Reopen by investment:** a player invests 150 to 600 marks. The principal goes to the merchant's wallet and the NPC resumes with a fresh policy. The investor earns 25% of the merchant's positive daily net profit until payouts reach 125% of principal. Emit `MERCHANT_REOPENED` + reasoning `INVESTMENT_RECEIVED_REOPEN`.
-- **Fallback rescue:** if nobody invests within 5 game days, the Town Fund seeds the merchant (up to 150 marks, no profit share). Emit `RESCUED_BY_TOWN_FUND`. This keeps the town alive when no players are around (for example, during judging or the time-lapse).
+- **Fallback rescue:** if nobody invests within 5 game days, the Town Fund seeds the merchant (up to 150 marks, no profit share). Emit `MERCHANT_RESCUED` + reasoning `RESCUED_BY_TOWN_FUND`. This keeps the town alive when no players are around (for example, during judging or the time-lapse).
 - **Time-lapse and headless runs** use scripted "investor bots" or the rescue fallback so closures resolve without a human.
 - **Onchain:** the closed merchant keeps its sub-account. Investment and profit-share payouts are ordinary marks transfers settled in batches. Never mint for investments.
 - **Always surface it:** closures, investments, and rescues go to the event feed; this is a gameplay moment, not an error.
@@ -197,5 +199,5 @@ Purpose: make NPC strategy feel more agentic while keeping tick-level behavior d
 
 - **Unit:** each archetype's `decide` with fixed observations → expected action kinds and reason codes.
 - **Property:** all actions pass the guard or are rejected with a reason; every action has reasoning text; no action produces negative balances.
-- **Scenario:** run 30 days with no players; assert no NPC is permanently insolvent without replacement, prices stay within bounds outside Storms (ECONOMY §11).
+- **Scenario:** run 30 days with no players; assert no NPC stays closed past the 5-day Town Fund rescue, prices stay within bounds outside Storms (ECONOMY §11).
 - **Storm:** run the Storm scenario and assert the documented response (see `TESTING_AND_DEMO.md` §4).
