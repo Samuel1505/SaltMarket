@@ -2,6 +2,17 @@
 
 These are changes in paths the contract session does not edit: `packages/chain`, `apps/server`, and the root `package.json`. Each says what to change and why. The contract is in `contracts/goods` (see its README for the `settle` format).
 
+| # | Status (2026-11-09) |
+| --- | --- |
+| C1 | open (NearLedger) |
+| C2 | **done** in `backend/foundation` e28617a |
+| C3 | open (NearLedger) |
+| C4 | open (NearLedger); updated after C2, see below |
+| C5, C6 | open (nice to have / decide) |
+| C7 | open; the testnet key and `.env` values exist (README "Deployments") |
+| C8 | **done** in `backend/foundation` e28617a |
+| C9 | open |
+
 ## C1. NearLedger: convert net deltas into mints / transfers / burns (needed)
 
 `SettlementBatch.deltas` is a list of net `{account, token, delta}`. The contract's `settle` takes explicit `mints`, `transfers`, `burns` and applies them in that order (no negative intermediate balances, correct `minted`/`burned` totals, readable NEP-245 events). Suggested conversion, per token:
@@ -22,7 +33,9 @@ for (const q of neg) burns.push({ account_id: q.account, token_id, amount: Strin
 
 Pairing only ever *transfers* what an account loses, so it cannot debit more than the account's net loss. Since the delta is applied on top of the last settled balance (which is ≥ the loss), no step goes negative.
 
-## C2. Persist `lastSettled` across restarts (needed; correctness)
+## C2. Persist `lastSettled` across restarts (DONE, e28617a)
+
+> Done: the snapshot stores `lastSettled`, `lastSettledTick` and unconfirmed batches; each batch starts at the stored cursor; batches go out one at a time; re-sends after boot are marked; a first send that comes back `applied: false` stops settlement and marks the ledger degraded. The contract session reviewed it against the contract's cursor rules. Remaining caveat: a snapshot without a `ledger` section (older files, `pnpm demo:seed` output) settles every balance in its first batch, so it may only ever meet a **fresh** contract, never `goods.samuelowen.testnet` once that has been used. Against a used contract it would get `applied: false` (stops) or `ERR_GAP` (see C4); neither double-mints.
 
 `SimBackend.lastSettled` starts empty on every boot, but the world reloads from `data/world.json`. The first batch after a restart therefore re-sends **every balance as a positive delta**, and the chain would mint the whole economy a second time. The ticks are still contiguous, so the contract cannot tell this apart from a real batch.
 
@@ -35,9 +48,9 @@ Sim ids (`npc-fisher-1`, `p-…`, `townfund`, `captain`) are not valid NEAR acco
 ## C4. Read the result and classify errors (needed)
 
 - `settle` returns `{ applied, complete, last_tick_to }`. Map `applied` to `Receipt.applied`. `applied: false` on a batch the server has never sent successfully is an alarm, not a success (it usually means C2 or a fresh world against an old contract).
-- **Retryable:** `ERR_GAP` (an earlier batch hasn't landed yet), `ERR_BATCH_IN_PROGRESS`, `ERR_PAUSED`, RPC and timeout errors.
-- **Not retryable; needs a human:** `ERR_INSUFFICIENT_BALANCE`, `ERR_OVERLAP`, `ERR_BAD_*`, `ERR_UNKNOWN_TOKEN`, `ERR_NOT_AUTHORITY`. Because batches are contiguous, one stuck batch blocks every later one by design. Show it in the Judge panel ("ledger: stuck at 120-126: ERR_…") rather than retrying forever.
-- Send batches strictly in order, one in flight at a time. Today a retry timer can race the next batch. That's still safe (the newer one gets `ERR_GAP` and retries), but it wastes transactions.
+- **Retryable:** RPC and timeout errors, `ERR_PAUSED` (an operator paused the contract; retry with backoff until unpaused).
+- **Not retryable; stop and show it (needs a person):** `ERR_GAP`, `ERR_OVERLAP`, `ERR_BATCH_IN_PROGRESS`, `ERR_INSUFFICIENT_BALANCE`, `ERR_BAD_*`, `ERR_UNKNOWN_TOKEN`, `ERR_NOT_AUTHORITY`, `ERR_BATCH_TOO_LARGE` (until C5 exists). Since C2, batches go out strictly in order, so `ERR_GAP` can no longer mean "an earlier batch is still on its way". It means the server's cursor and the contract's cursor disagree, e.g. an old snapshot against a used contract. Show it in the Judge panel ("ledger: stuck at 120-126: ERR_…").
+- On boot with NearLedger, compare `settlement_cursor().last_tick_to` with the server's cursor (the `tickFrom` of the first pending batch, or `lastSettledTick` if nothing is pending) before sending anything. If they differ, mark the ledger degraded right away instead of finding out from the first failed batch. If `in_progress` is non-null, a split batch (C5) was interrupted: resume from `next_part`.
 
 ## C5. Split big windows into parts (nice to have)
 
@@ -51,7 +64,9 @@ The contract accepts an empty batch and just moves the cursor (about 1–3 Tgas)
 
 Sign `settle` with a **function-call key** on the authority account scoped to `goods.<authority>` and `settle,pause,register_accounts,mt_mint,mt_burn` (command in `contracts/goods/README.md`). It needs no deposit. Suggested env names: `NEAR_NETWORK`, `NEAR_RPC_URL`, `NEAR_CONTRACT_ID`, `NEAR_AUTHORITY_ID`, `NEAR_AUTHORITY_KEY` (values only in local `.env`). Also watch `storage_report().accounts_affordable` and alert when it drops below about 100.
 
-## C8. Root scripts (needed; CLAUDE.md §10 lists them)
+## C8. Root scripts (DONE, e28617a)
+
+> Verified 2026-11-09: `pnpm contracts:test` run from `backend/foundation` e28617a passes (44 unit + 1 sandbox scenario, 57 s on a warm build). **First-run caveat:** the sandbox test downloads the `near-sandbox` node binary (2.13.4, ~71 MB) from S3 into the build folder. That download can stall, which is the likely cause of the 5-minute timeout seen on a fresh copy. To reuse an existing binary, set `NEAR_SANDBOX_BIN_PATH=/path/to/near-sandbox` (supported by near-sandbox 0.3.16).
 
 Add to the root `package.json`:
 

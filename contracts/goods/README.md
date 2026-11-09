@@ -13,6 +13,8 @@ cargo test --lib                           # 44 unit tests (near-sdk mock), ~3 s
 cargo test --test sandbox -- --nocapture   # 1 end-to-end scenario on a local sandbox node, ~45 s
 ```
 
+The first sandbox run downloads the `near-sandbox` node binary (~71 MB) from S3, which can be slow or stall. To reuse a binary you already have, set `NEAR_SANDBOX_BIN_PATH` to its path. From the repo root, `pnpm contracts:build` and `pnpm contracts:test` run the same commands.
+
 Toolchain: Rust 1.93.0 (pinned in `rust-toolchain.toml` by `cargo near new`), cargo-near 0.22.0, near-sdk 5.29.1. Tests use **near-sandbox + near-api**, the framework the current `cargo near new` template and the NEAR agent skill recommend. Sources are in `docs/NEAR_INTEGRATION.md` §10.
 
 ## Roles
