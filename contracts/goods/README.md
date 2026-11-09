@@ -144,9 +144,29 @@ near contract call-function as-read-only "goods.$AUTHORITY" get_status json-args
 
 The server then needs, in its local `.env` only: `NEAR_NETWORK=testnet`, `NEAR_CONTRACT_ID=goods.$AUTHORITY`, `NEAR_AUTHORITY_ID=$AUTHORITY`, and the function-call key (exact env var names are the backend's call; see `REQUESTS.md`).
 
-## Decisions for the human
+## Decisions (2026-11-09)
 
-1. **Topology:** the contract on `goods.<authority>` with the authority as a separate account (recommended, and assumed above), or the contract on the authority account itself.
-2. **Contract account keys:** NEP-245 says an MT contract "should not have any access keys". Keeping the full-access key on `goods.<authority>` allows redeploys during the hackathon. Deleting it after the final deploy makes the code immutable. Recommended: keep it until Nov 14, then decide.
-3. **`repository` in Cargo.toml** (NEP-330 source metadata) is still a placeholder. Set it to the public repo URL before the deploy.
-4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.<authority>`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
+1. **Topology:** the contract is on `goods.samuelowen.testnet`; the authority is `samuelowen.testnet` (the account already exists).
+2. **Contract account keys:** keep the full-access key on `goods.samuelowen.testnet` until Nov 14 so fixes can be redeployed, then decide whether to delete it.
+3. **`repository` in Cargo.toml:** left as a TODO, to be filled in later.
+4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.samuelowen.testnet`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
+
+## Deployments
+
+| Network | Contract | Authority | Code sha256 | Deploy + init tx | Date |
+| --- | --- | --- | --- | --- | --- |
+| testnet | `goods.samuelowen.testnet` | `samuelowen.testnet` | `078100cd61dc9092f9d89bbcd2c7b11bc0218cbbeb00e0b6c0dbfc192ea47546` (commit 135a512) | `4UiHUPwVMqXAKtvSnXkZBNhtKC7z7pdtSQfz1AtRQxbT` | 2026-11-09 |
+
+Account created in tx `FuVr65dQSy1mzWzZqHiu1n7w6862QRzta4xgQy95EWga` with 5 NEAR. After init, `storage_report` showed 2.41 NEAR locked by code and about 207 accounts affordable.
+
+**Don't run test settlements against this contract.** The first `settle` sets the cursor, and the server's real first batch (`0-6`) would then be ignored as a replay. Use the sandbox tests for experiments. If a stray batch does land: `pause`, then `reset_settlement_cursor` (1 yocto), then `unpause`.
+
+**Server signing key (testnet):** function-call key `ed25519:FAxxdMen8hfmhwYApHnSsdcDQHJYgKPTkgdMGYmuwVA9` on `samuelowen.testnet`. It can call only `goods.samuelowen.testnet` methods `settle, pause, register_accounts, mt_mint, mt_burn`, with a 1 NEAR gas allowance. Added in tx `88Qpa6bcvisdGVRXtJnZu6jFWUpnZBBvJrEzwEsQ6T4z`. The secret is only in the local legacy keychain file `~/.near-credentials/testnet/samuelowen.testnet/ed25519_FAxx….json`, outside the repo. For the server's local `.env` (values per REQUESTS.md C7):
+
+```
+NEAR_NETWORK=testnet
+NEAR_RPC_URL=https://test.rpc.fastnear.com
+NEAR_CONTRACT_ID=goods.samuelowen.testnet
+NEAR_AUTHORITY_ID=samuelowen.testnet
+NEAR_CREDENTIALS_FILE=/Users/mac/.near-credentials/testnet/samuelowen.testnet/ed25519_FAxxdMen8hfmhwYApHnSsdcDQHJYgKPTkgdMGYmuwVA9.json
+```
