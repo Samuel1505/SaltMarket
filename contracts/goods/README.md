@@ -150,3 +150,13 @@ The server then needs, in its local `.env` only: `NEAR_NETWORK=testnet`, `NEAR_C
 2. **Contract account keys:** keep the full-access key on `goods.samuelowen.testnet` until Nov 14 so fixes can be redeployed, then decide whether to delete it.
 3. **`repository` in Cargo.toml:** left as a TODO, to be filled in later.
 4. **Fresh world = fresh contract.** If `data/world.json` is deleted, ticks restart at 0. Every batch then counts as a replay or fails (`ERR_OVERLAP`) against the old cursor. For a fresh world, deploy a new contract account (e.g. `goods2.samuelowen.testnet`) or pause, `reset_settlement_cursor`, and accept that old balances stay on chain.
+
+## Deployments
+
+| Network | Contract | Authority | Code sha256 | Deploy + init tx | Date |
+| --- | --- | --- | --- | --- | --- |
+| testnet | `goods.samuelowen.testnet` | `samuelowen.testnet` | `078100cd61dc9092f9d89bbcd2c7b11bc0218cbbeb00e0b6c0dbfc192ea47546` (commit 135a512) | `4UiHUPwVMqXAKtvSnXkZBNhtKC7z7pdtSQfz1AtRQxbT` | 2026-11-09 |
+
+Account created in tx `FuVr65dQSy1mzWzZqHiu1n7w6862QRzta4xgQy95EWga` with 5 NEAR. After init, `storage_report` showed 2.41 NEAR locked by code and about 207 accounts affordable.
+
+**Don't run test settlements against this contract.** The first `settle` sets the cursor, and the server's real first batch (`0-6`) would then be ignored as a replay. Use the sandbox tests for experiments. If a stray batch does land: `pause`, then `reset_settlement_cursor` (1 yocto), then `unpause`.
