@@ -1,0 +1,30 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials/
+payload.json
+submission*.json
+
+# deps / builds
+node_modules/
+dist/
+build/
+coverage/
+target/
+*.wasm
+*.tsbuildinfo
+
+# runtime data (JSON snapshots replace SQLite)
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/
+*.log

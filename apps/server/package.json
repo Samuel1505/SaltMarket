@@ -1,0 +1,21 @@
+{
+  "name": "@saltmarket/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "dev:mock": "tsx watch src/main.ts --mock",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.1",
+    "@fastify/websocket": "^11.3.7",
+    "@saltmarket/chain": "workspace:*",
+    "@saltmarket/shared": "workspace:*",
+    "@saltmarket/sim": "workspace:*",
+    "fastify": "^5.12.8",
+    "zod": "^4.6.7"
+  }
+}
