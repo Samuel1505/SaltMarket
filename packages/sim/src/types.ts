@@ -66,6 +66,8 @@ export type Ship = {
   smokehouseSold: number;
   filledAtTick: number | null;
   ceiling: Pips;
+  /** Base order size for the next visit (moves with supply, tuning L15). */
+  baseVolume: number;
   /** The Captain's latest reasoning (he is not a regular merchant). */
   reason: Reason;
 };
