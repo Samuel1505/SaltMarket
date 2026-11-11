@@ -172,3 +172,5 @@ NEAR_CONTRACT_ID=goods.samuelowen.testnet
 NEAR_AUTHORITY_ID=samuelowen.testnet
 NEAR_CREDENTIALS_FILE=/Users/mac/.near-credentials/testnet/samuelowen.testnet/ed25519_FAxxdMen8hfmhwYApHnSsdcDQHJYgKPTkgdMGYmuwVA9.json
 ```
+
+**Key rotation (2026-11-11):** the first server key (`FAxxdMen…`, 1 NEAR allowance) ran low after about 1,000 batches. It was replaced by function-call key `ed25519:AoVsZZsb2djyKQXwHDwif3HpbmV4N1EUMFVJG3Yam15d` (15 NEAR allowance, same contract and methods; added in tx `2XisxQLvk3ZY3RXXtx6zjYjixuEVZHDouYz3Y9ELPqoZ`), and the old key was deleted in tx `C2YpimnnZfX31PwFfEkjZhjtVqq75xk1avnq1PJymjLT`. The server reads the new key through `NEAR_AUTHORITY_KEY_FILE`. A key's allowance can't be raised, so when it runs low, add a new key the same way and switch the file path. Run `dev:chain` only from the backend worktree whose `data/world.json` matches the contract's cursor.
