@@ -1,0 +1,40 @@
+.signin {
+  display: grid;
+  gap: var(--space-3);
+}
+.signin-form {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.signin-label {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  flex: 1 1 180px;
+}
+.signin-label input {
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  font-size: 16px; /* ≥16px stops iOS zooming on focus */
+}
+.signin-note {
+  font-size: var(--text-sm);
+}
+.signin-error {
+  color: var(--down);
+  font-size: var(--text-sm);
+}
+.signin-social {
+  width: 100%;
+}
+.signin-or {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+}

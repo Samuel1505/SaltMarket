@@ -1,0 +1,81 @@
+.ship-name {
+  font-style: italic;
+  font-weight: 650;
+}
+.ship-body {
+  display: grid;
+  gap: var(--space-3);
+}
+.ship-stats {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: var(--space-3) var(--space-6);
+  align-items: end;
+}
+.ship-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ship-big {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.ship-ceiling {
+  color: var(--gold);
+}
+.ship-big .unit {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+.ship-fill {
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+.ship-line {
+  font-size: var(--text-sm);
+}
+.gold {
+  color: var(--gold);
+}
+.ship-action {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.ship-action .btn {
+  justify-self: start;
+}
+.ship[data-docked='true'] {
+  border-color: var(--border-strong);
+}
+.ship-sale {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.ship-sale-mark {
+  color: var(--up);
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .ship-stats {
+    grid-template-columns: auto auto;
+  }
+  .ship-fill {
+    grid-column: 1 / -1;
+  }
+  .ship-action .btn {
+    justify-self: stretch;
+  }
+}

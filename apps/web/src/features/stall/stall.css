@@ -1,0 +1,162 @@
+.inv {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.inv-item {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+.inv-qty {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  line-height: 1.2;
+}
+.inv-name {
+  font-size: var(--text-xs);
+  line-height: 1.25;
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+.inv-item[data-empty='true'] .inv-qty {
+  color: var(--text-faint);
+}
+.inv-empty {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+}
+
+.jobs,
+.recipes {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.job {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+}
+.job-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.job-head .muted {
+  font-weight: 500;
+}
+.meter-job {
+  height: 6px;
+}
+.meter-job > span {
+  background: var(--accent);
+}
+
+.recipe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.recipe-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.recipe-io {
+  font-size: var(--text-sm);
+}
+.recipe-out {
+  color: var(--gold);
+  font-weight: 600;
+}
+.recipe-why {
+  font-size: var(--text-xs);
+}
+.recipe .btn {
+  flex: none;
+  min-width: 9.5em;
+}
+
+.upkeep {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+.upkeep-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.upkeep-warn {
+  color: var(--warn);
+}
+.upkeep-btn,
+.upkeep-max {
+  justify-self: end;
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 520px) {
+  .inv {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .recipe {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .recipe .btn {
+    width: 100%;
+  }
+}
+.stakes {
+  margin-top: var(--space-4);
+}
+.stakes-h {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  margin: 0 0 var(--space-2);
+}
+.stakes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.stake {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+.stake-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.stake-sub {
+  font-size: var(--text-xs);
+}
