@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import { connect, useGame } from './store/game';
 import { TopBar, EventBanner, ConnectionBanner } from './features/town/TopBar';
@@ -15,8 +15,10 @@ import { LedgerDrawer } from './features/judge/LedgerDrawer';
 import { JUDGE } from './lib/judge';
 import { SignIn } from './features/auth/SignIn';
 import { hold } from './styles/tokens.motion';
-import { DevToggle } from './dev/DevToggle';
 import './app.css';
+
+// break-ui toggle: dev builds only; the lazy import keeps its code and CSS out of production entirely.
+const DevToggle = import.meta.env.DEV ? lazy(() => import('./dev/DevToggle').then((m) => ({ default: m.DevToggle }))) : null;
 
 type Tab = 'stall' | 'market' | 'npcs' | 'news';
 const TABS: Array<[Tab, string]> = [
@@ -82,7 +84,11 @@ export function App() {
         )}
       </main>
       {JUDGE && <LedgerDrawer open={ledgerOpen} onOpenChange={setLedgerOpen} />}
-      {import.meta.env.DEV && <DevToggle />}
+      {DevToggle && (
+        <Suspense fallback={null}>
+          <DevToggle />
+        </Suspense>
+      )}
       <Toaster
         position="bottom-right"
         offset={16}
