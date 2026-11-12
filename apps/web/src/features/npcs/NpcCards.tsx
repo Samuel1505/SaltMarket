@@ -13,7 +13,7 @@ import './npcs.css';
 export const RULES_FILE = 'packages/sim/src/pricing/merchant-rules.ts';
 const REPO_BLOB = 'https://github.com/Samuel1505/SaltMarket/blob/main/';
 // The server sends a repo-relative path; anything else is shown as plain text, never linked.
-const rulesHref = (path: string) => (/^[\w./-]+$/.test(path) && !path.includes('..') ? REPO_BLOB + path : null);
+export const rulesHref = (path: string) => (/^[\w./-]+$/.test(path) && !path.includes('..') ? REPO_BLOB + path : null);
 
 /** Full tooltip for a merchant: fetched lazily from /api/npcs/:id/explain when it opens. */
 function ExplainBody({ npc, goodName }: { npc: Npc; goodName: (g: string) => string }) {

@@ -80,6 +80,7 @@ function GoodRow({ world, good }: { world: WorldSnapshot; good: Good }) {
             <Trend trend={quote.trend} bps={quote.change24hBps} />
           </span>
         )}
+        {quote?.trendReason && <span className="good-why">{quote.trendReason.replace(/^[^:]*:\s*/, '')}</span>}
       </th>
       <td className="col-held num">{signedIn ? held : '–'}</td>
       <td>

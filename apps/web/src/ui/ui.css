@@ -35,6 +35,12 @@
   background: transparent;
   border-color: transparent;
 }
+/* Toggle buttons (speed, tabs): the selected one is a quiet raised state, not a second gold. */
+.btn[aria-pressed='true'] {
+  background: var(--surface-hover);
+  border-color: var(--text-muted);
+  color: var(--text);
+}
 /* Disabled reads as clearly off: flat well, faint text, no accent fill (not just a dimmer gold). */
 .btn:disabled,
 .btn[data-variant='primary']:disabled {
@@ -242,4 +248,123 @@
 }
 .toast[data-type='error'] {
   border-color: var(--down) !important;
+}
+
+/* ── Select (native for keyboard + screen readers, styled so it never looks like a browser default) ── */
+.select {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.select select {
+  appearance: none;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 0 calc(var(--space-6) + var(--space-1)) 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  transition: border-color var(--dur-hover) var(--ease-hover);
+}
+.select::after {
+  content: '▾';
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.select select:disabled {
+  cursor: not-allowed;
+  color: var(--text-faint);
+}
+@media (hover: hover) and (pointer: fine) {
+  .select select:hover:not(:disabled) {
+    border-color: var(--text-muted);
+  }
+}
+@media (pointer: coarse) {
+  .select select {
+    min-height: var(--hit);
+  }
+}
+
+/* ── Drawer (base-ui Drawer, right edge, swipe to dismiss) ── */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition: opacity var(--dur-drawer) var(--ease-drawer);
+}
+.drawer-backdrop[data-starting-style],
+.drawer-backdrop[data-ending-style] {
+  opacity: 0;
+}
+.drawer-backdrop[data-swiping] {
+  transition: none;
+}
+.drawer-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: flex;
+  justify-content: flex-end;
+}
+.drawer {
+  width: min(560px, 100vw);
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  outline: none;
+  transform: translateX(var(--drawer-swipe-movement-x, 0));
+  transition: transform var(--dur-drawer) var(--ease-drawer);
+}
+.drawer[data-starting-style],
+.drawer[data-ending-style] {
+  transform: translateX(100%);
+}
+.drawer[data-swiping] {
+  transition: none;
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    transition: opacity var(--dur-drawer) var(--ease-out);
+  }
+  .drawer[data-starting-style],
+  .drawer[data-ending-style] {
+    transform: none;
+    opacity: 0;
+  }
+}
+.drawer-content {
+  padding: var(--space-5);
+}
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.drawer-title {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  margin: 0;
+}
+.drawer-desc {
+  font-size: var(--text-sm);
+  margin: var(--space-1) 0 0;
 }

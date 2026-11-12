@@ -59,7 +59,7 @@
 }
 .banner[data-kind='storm'] {
   background: var(--surface-raised);
-  border-color: var(--accent);
+  border-color: var(--fill);
 }
 .conn {
   justify-content: center;
