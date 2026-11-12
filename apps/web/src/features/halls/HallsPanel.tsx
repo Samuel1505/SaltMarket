@@ -20,7 +20,9 @@ function FeeControl({ hall, maxBps }: { hall: Venue; maxBps: number }) {
   return (
     <div className="hall-own">
       <div className="hall-own-head">
-        <strong className="hall-own-name">{hall.name}</strong>
+        <strong className="hall-own-name" title={hall.name}>
+          {hall.name}
+        </strong>
         <Badge tone="up">Yours</Badge>
       </div>
       <div className="hall-own-stats">
@@ -134,12 +136,16 @@ export function HallsPanel() {
                     {sellerCut(v) === cheapest && venues.length > 1 && <> · cheapest</>}
                   </span>
                 </th>
-                <td className="r num">
+                <td className="r num" data-label="Seller pays">
                   {formatBps(sellerCut(v))}
                   <span className="halls-split muted">{v.kind === 'harbor' ? 'tax' : `fee${v.taxBps ? ' + tax' : ''}`}</span>
                 </td>
-                <td className="r num">{formatMarks(v.volume24hPips)}</td>
-                <td className="r num">{v.kind === 'hall' ? formatMarks(v.feeIncome24hPips) : '–'}</td>
+                <td className="r num" data-label="Traded today">
+                  {formatMarks(v.volume24hPips)}
+                </td>
+                <td className="r num" data-label="Owner earned">
+                  {v.kind === 'hall' ? formatMarks(v.feeIncome24hPips) : '–'}
+                </td>
               </tr>
             ))}
           </tbody>

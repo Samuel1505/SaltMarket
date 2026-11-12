@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ServerMessage, type ClientMessage, type FeedItem, type WorldSnapshot } from '@saltmarket/shared/protocol';
 import { applyDelta, applyFeed } from '@saltmarket/shared/client';
 import { clearSession, getSession } from '../lib/session';
+import { DEV_DATA, devWorld } from '../dev/fixtures';
 
 export type Ack = Extract<ServerMessage, { t: 'ack' }>;
 export type TimelapseMsg = Extract<ServerMessage, { t: 'timelapse' }>;
@@ -156,6 +157,10 @@ function flush() {
       default:
         break; // tick, pong, error: nothing to store
     }
+  }
+  if (DEV_DATA && world && world !== s.world) {
+    world = devWorld(world);
+    feed = world.feed;
   }
   if (world !== s.world || feed !== s.feed || playerId !== s.playerId || status !== s.status || sessionExpired !== s.sessionExpired) {
     useGame.setState({ world, feed, playerId, status, sessionExpired });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatMarks } from '@saltmarket/shared/client';
 import { LeaderboardResponse, type Leaderboard as Board } from '@saltmarket/shared/protocol';
 import { api } from '../../lib/api';
+import { devBoard } from '../../dev/fixtures';
 import { useGame } from '../../store/game';
 import { Card } from '../../ui/primitives';
 import './leaderboard.css';
@@ -18,9 +19,11 @@ function Rows({ rows, empty }: { rows: Board['netWorth']; empty: string }) {
       {[...top, ...(me ? [me] : [])].map((r) => (
         <li key={r.playerId} className="lb-row" data-me={r.isMe}>
           <span className="lb-rank num">{r.rank}</span>
-          <span className="lb-name">
-            {r.displayName}
-            {r.isMe && <span className="muted"> (you)</span>}
+          <span className="lb-who">
+            <span className="lb-name" title={r.displayName}>
+              {r.displayName}
+            </span>
+            {r.isMe && <span className="lb-you">you</span>}
           </span>
           <span className="lb-value num">{formatMarks(r.valuePips)}</span>
         </li>
@@ -37,7 +40,7 @@ export function Leaderboard() {
     let live = true;
     const load = async () => {
       const r = await api('/api/leaderboard', LeaderboardResponse);
-      if (live && r.ok) setBoard(r.data);
+      if (live && r.ok) setBoard(devBoard(r.data));
     };
     void load();
     const id = setInterval(load, POLL_MS);

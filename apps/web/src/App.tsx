@@ -15,6 +15,8 @@ import { LedgerDrawer } from './features/judge/LedgerDrawer';
 import { JUDGE } from './lib/judge';
 import { SignIn } from './features/auth/SignIn';
 import { hold } from './styles/tokens.motion';
+import { DevToggle } from './dev/DevToggle';
+import './dev/dev.css';
 import './app.css';
 
 type Tab = 'stall' | 'market' | 'npcs' | 'news';
@@ -81,6 +83,7 @@ export function App() {
         )}
       </main>
       {JUDGE && <LedgerDrawer open={ledgerOpen} onOpenChange={setLedgerOpen} />}
+      {import.meta.env.DEV && <DevToggle />}
       <Toaster
         position="bottom-right"
         offset={16}

@@ -39,7 +39,11 @@ export function TopBar() {
     <header className="topbar">
       <div className="topbar-brand">
         <h1>Saltmarket</h1>
-        {name && <span className="muted topbar-name">{name}'s stall</span>}
+        {name && (
+          <span className="muted topbar-name" title={`${name}'s stall`}>
+            {name}'s stall
+          </span>
+        )}
         {clock && <WatchWeek />}
       </div>
       <div className="topbar-stats">

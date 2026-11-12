@@ -127,3 +127,6 @@
 .npc-need {
   font-size: var(--text-xs);
 }
+.npc-empty {
+  font-size: var(--text-sm);
+}

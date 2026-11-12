@@ -149,8 +149,12 @@ const NpcCardView = memo(function NpcCardView({ npc, signedIn, goodName }: { npc
     <li className="npc" data-status={npc.status}>
       <div className="npc-head">
         <div className="npc-who">
-          <strong className="npc-name">{npc.name}</strong>
-          <span className="muted npc-title">{npc.title}</span>
+          <strong className="npc-name" title={npc.name}>
+            {npc.name}
+          </strong>
+          <span className="muted npc-title" title={npc.title}>
+            {npc.title}
+          </span>
         </div>
         <Badge tone={st.tone}>{st.label}</Badge>
       </div>
@@ -204,6 +208,7 @@ export function NpcCards() {
   const sorted = [...npcs].sort((a, b) => Number(b.status === 'closed') - Number(a.status === 'closed'));
   return (
     <Card title="Town merchants" hint="Own purse, own prices">
+      {sorted.length === 0 && <p className="muted npc-empty">No merchants are trading right now.</p>}
       <ul className="npcs">
         {sorted.map((n) => (
           <NpcCardView key={n.id} npc={n} signedIn={signedIn} goodName={goodName} />
