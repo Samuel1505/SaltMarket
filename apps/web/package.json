@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@privy-io/react-auth": "^3.51.3",
     "@saltmarket/shared": "workspace:*",
+    "@solana/kit": "^8.6.0",
     "clsx": "^2.1.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

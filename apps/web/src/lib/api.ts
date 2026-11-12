@@ -33,6 +33,12 @@ export async function loginGuest(displayName?: string): Promise<Result<Session>>
   return api('/api/auth/login', LoginResponse, { method: 'POST', body });
 }
 
+/** Exchange a Privy access token for a game session. The same Privy user always maps to the same player. */
+export async function loginSocial(credential: string, displayName?: string): Promise<Result<Session>> {
+  const body = JSON.stringify({ provider: 'social', credential, ...(displayName ? { displayName } : {}) });
+  return api('/api/auth/login', LoginResponse, { method: 'POST', body });
+}
+
 // Explain payloads change at most once per tick; a short cache keeps hover-scrubbing cheap.
 const explainCache = new Map<string, { at: number; data: Explain }>();
 const EXPLAIN_TTL = 2500;

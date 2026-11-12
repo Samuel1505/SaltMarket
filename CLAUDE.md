@@ -227,14 +227,18 @@ What works:       apps/web (Vite + React 19 + TS). Tokens (tokens.css / tokens.m
                   merchant price); NPC cards (status badge, purse trend, reasoning popover from /explain with rules path,
                   recent decisions, Closed: needs investment → Invest slider, rescue countdown, investor line).
                   Verified headless against pnpm dev:mock at 1280 and 380 px: gather → sell ≈ 1 s, invest reopens Ludo,
-                  no console errors.
+                  no console errors. Privy email/Google sign-in (lazy-loaded on click, embedded wallet off, token →
+                  POST /api/auth/login provider 'social'); dialog verified headless, exchange verified on the mock.
+                  "Read the rules" links to merchant-rules.ts on github.com/Samuel1505/SaltMarket (main).
 Next up:          Stall panel (inventory, craft barrel / cure fish progress, upgrade, rent) and selling to the Captain;
-                  feed + notable toasts; judge panel; Watch a week; Halls; Ledger drawer; Privy; leaderboard.
+                  feed + notable toasts; judge panel; Watch a week; Halls; Ledger drawer; leaderboard.
 Known issues:     Root `pnpm test` doesn't run web tests (root vitest.config.ts is backend-owned; request: add
                   'apps/web/src/**/*.test.ts' to include). Price flash not built yet (Nov 13 polish). Not yet run against
                   JUDGE_MODE=1 pnpm dev (real sim). review-animations / break-ui passes still to do.
-Open questions:   Privy App ID (VITE_PRIVY_APP_ID); public repo URL so "Read the rules" can be a link, not just a path.
-Tooling note:     pnpm isn't installed system-wide; a shim at ~/.local/bin/pnpm runs `npx pnpm@11.24.0`.
+Open questions:   Privy dashboard: add the hosted demo origin to allowed origins; confirm Google is enabled (email works).
+                  Joint check with backend: a real Privy sign-in against the real server survives reload + restart.
+Tooling note:     pnpm isn't installed system-wide; a shim at ~/.local/bin/pnpm runs `npx pnpm@11.24.0`. Privy pulled in
+                  optional native builds; pnpm-workspace.yaml allowBuilds sets them false (pure-JS fallbacks).
 ```
 
 ## 12. Things to ask the human early
