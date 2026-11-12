@@ -2,6 +2,7 @@ import { formatMarks } from '@saltmarket/shared/client';
 import { useGame } from '../../store/game';
 import { formatClock, formatSeconds, useCountdown } from '../../lib/time';
 import type { Clock, Ship } from '@saltmarket/shared/protocol';
+import { WatchWeek } from '../timelapse/WatchWeek';
 import './town.css';
 
 function ShipStatus({ ship, clock }: { ship: Ship; clock: Clock }) {
@@ -39,6 +40,7 @@ export function TopBar() {
       <div className="topbar-brand">
         <h1>Saltmarket</h1>
         {name && <span className="muted topbar-name">{name}'s stall</span>}
+        {clock && <WatchWeek />}
       </div>
       <div className="topbar-stats">
         {purse !== undefined && (

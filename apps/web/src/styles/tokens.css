@@ -26,11 +26,13 @@
   --down: #e98c7c; /* muted coral, always with ▼ */
   --warn: #e3a95c;
   --warn-bg: #2a2217;
-  --fill: #5f7f9c; /* meters and chart lines: calm slate, so gold stays the only accent */
+  --fill: #5f7f9c; /* meters: calm slate, so gold stays the only accent */
+  --fill-strong: #8fb0cc; /* chart lines: 8:1 on --surface-sunken */
   --closed: #9097a0;
   --closed-bg: #1f2630;
   --storm-tint: rgb(98 140 182 / 0.08);
   --scrim: rgb(4 7 11 / 0.62);
+  --storm-band: rgb(98 140 182 / 0.16);
   --focus: #e6c07a;
   /* Depth: a faint top highlight + a soft low shadow; the hairline border does the edge. */
   --shadow-sm: inset 0 1px 0 rgb(255 255 255 / 0.035), 0 1px 2px rgb(0 0 0 / 0.28);
