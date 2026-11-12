@@ -6,35 +6,124 @@
   background: linear-gradient(var(--storm-tint), var(--storm-tint)), var(--bg);
 }
 .main {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: var(--space-4);
+  padding: var(--space-5);
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: var(--space-4);
+  gap: var(--space-5);
   align-items: start;
+  grid-template-columns: minmax(0, 3.5fr) minmax(0, 5.6fr) minmax(0, 3.1fr);
+  grid-template-areas:
+    'stall market npcs'
+    'news news news';
 }
 .col {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
   min-width: 0;
+}
+.col-stall {
+  grid-area: stall;
+}
+.col-market {
+  grid-area: market;
+}
+.col-npcs {
+  grid-area: npcs;
+}
+.col-news {
+  grid-area: news;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
 }
 .loading {
   padding: var(--space-8) var(--space-4);
   text-align: center;
 }
-@media (max-width: 960px) {
+.tabs {
+  display: none;
+}
+
+/* Laptop: merchants move under the stall; market keeps the wide column. */
+@media (max-width: 1359px) {
   .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-areas:
+      'stall market'
+      'npcs market'
+      'news news';
+  }
+}
+@media (max-width: 1023px) {
+  .main {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+  .layout,
+  .col {
+    gap: var(--space-4);
+  }
+  .col-news {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 520px) {
+
+/* Phones: one section at a time, switched from a tab bar pinned to the bottom (thumb reach). */
+@media (max-width: 760px) {
   .main {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-3) calc(var(--hit) + var(--space-8));
     gap: var(--space-3);
   }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+  .layout > .col {
+    grid-area: auto;
+    gap: var(--space-3);
+  }
+  .layout[data-tab='stall'] > :not([data-section='stall']),
+  .layout[data-tab='market'] > :not([data-section='market']),
+  .layout[data-tab='npcs'] > :not([data-section='npcs']),
+  .layout[data-tab='news'] > :not([data-section='news']) {
+    display: none;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-1);
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+  }
+}
+.tab {
+  min-height: var(--hit);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-hover) var(--ease-hover);
+}
+.tab:active {
+  transform: scale(var(--press-scale));
+}
+.tab[aria-pressed='true'] {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
 }

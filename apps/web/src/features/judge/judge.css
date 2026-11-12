@@ -39,7 +39,17 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
-@media (max-width: 640px) {
+/* Phones: one scrollable row so the judge strip never pushes the town off screen. */
+@media (max-width: 760px) {
+  .judge-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: var(--space-2) var(--space-3);
+  }
+  .judge-group {
+    flex-wrap: nowrap;
+  }
   .judge-links {
     margin-left: 0;
   }

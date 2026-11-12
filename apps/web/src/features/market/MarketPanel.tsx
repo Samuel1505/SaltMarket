@@ -96,19 +96,25 @@ function GoodRow({ world, good, venueId }: { world: WorldSnapshot; good: Good; v
   return (
     <tr>
       <th scope="row">
-        <span className="good-name">{name}</span>
-        {quote && (
+        <span className="good-name">
+          {name}
+          {signedIn && (
+            <span className="good-held num" data-empty={held === 0}>
+              <span className="sr-only">, you have</span> {held}
+            </span>
+          )}
+        </span>
+        {quote && quote.trend !== 'flat' && (
           <span className="good-trend">
             <Trend trend={quote.trend} bps={quote.change24hBps} />
           </span>
         )}
         {quote?.trendReason && <span className="good-why">{quote.trendReason.replace(/^[^:]*:\s*/, '')}</span>}
       </th>
-      <td className="col-held num">{signedIn ? held : '–'}</td>
-      <td>
+      <td className="col-bid" data-label="Buyers pay">
         <OfferPrice offers={bids} quote={quote} side="buy" goodName={name.toLowerCase()} />
       </td>
-      <td>
+      <td className="col-ask" data-label="Sellers ask">
         <OfferPrice offers={asks} quote={quote} side="sell" goodName={name.toLowerCase()} />
       </td>
       {signedIn && (
@@ -160,10 +166,7 @@ export function MarketPanel() {
         <table className="market-table">
           <thead>
             <tr>
-              <th scope="col">Good</th>
-              <th scope="col" className="col-held">
-                You have
-              </th>
+              <th scope="col">Good{world.me ? ' · you have' : ''}</th>
               <th scope="col">Best buyer pays</th>
               <th scope="col">Cheapest seller</th>
               {world.me && (

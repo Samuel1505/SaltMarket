@@ -100,6 +100,7 @@ function InvestButton({ npc }: { npc: Npc }) {
       }}
     >
       <Popover.Trigger render={<Button variant="primary" size="sm" disabled={!canAfford} />}>Invest</Popover.Trigger>
+      {!canAfford && <span className="muted npc-need num">You need at least {formatMarks(min)} marks to invest.</span>}
       <Popover.Portal>
         <Popover.Positioner sideOffset={8} collisionPadding={16}>
           <Popover.Popup className="popup invest">
@@ -202,7 +203,7 @@ export function NpcCards() {
   // Closed shops first: they are the opportunity on screen.
   const sorted = [...npcs].sort((a, b) => Number(b.status === 'closed') - Number(a.status === 'closed'));
   return (
-    <Card title="Town merchants" hint="Every merchant runs its own purse and explains its prices">
+    <Card title="Town merchants" hint="Own purse, own prices">
       <ul className="npcs">
         {sorted.map((n) => (
           <NpcCardView key={n.id} npc={n} signedIn={signedIn} goodName={goodName} />

@@ -19,10 +19,9 @@
 }
 .inv-name {
   font-size: var(--text-xs);
+  line-height: 1.25;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 .inv-item[data-empty='true'] .inv-qty {
   color: var(--text-faint);
