@@ -217,7 +217,24 @@ Open questions for the human:
 ### Status — frontend
 
 ```
-(frontend owner's session maintains this section)
+Branch:           frontend/web (from local main 19d6214; `git fetch` needs GitHub credentials in this shell)
+Last session:     2026-11-12
+What works:       apps/web (Vite + React 19 + TS). Tokens (tokens.css / tokens.motion.ts, Emil curves); guard tests:
+                  no raw durations/curves/colors outside tokens, no chain words outside features/judge/ (pnpm --filter
+                  @saltmarket/web test). WS store with per-frame batching, reconnect backoff, ack timeouts. Guest sign-in;
+                  top bar (purse, clock, ship countdown); event + reconnecting banners; Gather (shared cooldown bar via
+                  WAAPI, "+2 fish" pop); Harbor market (Sell 1 / Sell all / Buy 1, ▲/▼ + %, reasoning popover on every
+                  merchant price); NPC cards (status badge, purse trend, reasoning popover from /explain with rules path,
+                  recent decisions, Closed: needs investment → Invest slider, rescue countdown, investor line).
+                  Verified headless against pnpm dev:mock at 1280 and 380 px: gather → sell ≈ 1 s, invest reopens Ludo,
+                  no console errors.
+Next up:          Stall panel (inventory, craft barrel / cure fish progress, upgrade, rent) and selling to the Captain;
+                  feed + notable toasts; judge panel; Watch a week; Halls; Ledger drawer; Privy; leaderboard.
+Known issues:     Root `pnpm test` doesn't run web tests (root vitest.config.ts is backend-owned; request: add
+                  'apps/web/src/**/*.test.ts' to include). Price flash not built yet (Nov 13 polish). Not yet run against
+                  JUDGE_MODE=1 pnpm dev (real sim). review-animations / break-ui passes still to do.
+Open questions:   Privy App ID (VITE_PRIVY_APP_ID); public repo URL so "Read the rules" can be a link, not just a path.
+Tooling note:     pnpm isn't installed system-wide; a shim at ~/.local/bin/pnpm runs `npx pnpm@11.24.0`.
 ```
 
 ## 12. Things to ask the human early
