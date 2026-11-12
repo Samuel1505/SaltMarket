@@ -129,3 +129,35 @@
     width: 100%;
   }
 }
+.stakes {
+  margin-top: var(--space-4);
+}
+.stakes-h {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  margin: 0 0 var(--space-2);
+}
+.stakes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.stake {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+.stake-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.stake-sub {
+  font-size: var(--text-xs);
+}

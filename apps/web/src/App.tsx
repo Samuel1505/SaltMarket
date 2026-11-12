@@ -7,6 +7,7 @@ import { MarketPanel } from './features/market/MarketPanel';
 import { NpcCards } from './features/npcs/NpcCards';
 import { StallPanel } from './features/stall/StallPanel';
 import { ShipPanel } from './features/ship/ShipPanel';
+import { HallsPanel } from './features/halls/HallsPanel';
 import { JudgePanel } from './features/judge/JudgePanel';
 import { LedgerDrawer } from './features/judge/LedgerDrawer';
 import { JUDGE } from './lib/judge';
@@ -42,6 +43,7 @@ export function App() {
               {signedIn ? <GatherPanel /> : <SignIn />}
               {signedIn && <StallPanel />}
               <MarketPanel />
+              <HallsPanel />
             </div>
             <div className="col">
               <ShipPanel />

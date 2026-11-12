@@ -3,7 +3,7 @@ import { cmd, formatMarks } from '@saltmarket/shared/client';
 import type { Catalog, PlayerView, WorldSnapshot } from '@saltmarket/shared/protocol';
 import { useGame } from '../../store/game';
 import { act } from '../../store/act';
-import { Badge, Button, Card } from '../../ui/primitives';
+import { Badge, Button, Card, Meter } from '../../ui/primitives';
 import { JobProgress } from '../../ui/Progress';
 import { formatSeconds, useCountdown } from '../../lib/time';
 import { GATHER_HINT, bundleText, goodLabel, type Good } from '../../lib/goods';
@@ -138,6 +138,33 @@ function Upkeep({ me }: { me: PlayerView }) {
   );
 }
 
+/** Shops you backed: payouts until they reach the cap (125% of what you put in). */
+function Stakes({ me }: { me: PlayerView }) {
+  if (me.investments.length === 0) return null;
+  return (
+    <div className="stakes">
+      <h3 className="stakes-h">Shops you back</h3>
+      <ul>
+        {me.investments.map((i) => (
+          <li key={i.npcId} className="stake">
+            <div className="stake-head">
+              <span>
+                {i.npcName}
+                {!i.active && <span className="muted"> · paid in full</span>}
+              </span>
+              <span className="num">
+                <span className="gold">{formatMarks(i.paidOutPips)}</span> <span className="muted">of {formatMarks(i.capPips)} marks back</span>
+              </span>
+            </div>
+            <Meter value={i.paidOutPips} max={i.capPips} label={`${i.npcName} has paid back ${formatMarks(i.paidOutPips)} of ${formatMarks(i.capPips)} marks`} />
+            <span className="muted stake-sub num">You put in {formatMarks(i.principalPips)} marks</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function StallPanel() {
   const world = useGame((s) => s.world);
   const me = world?.me;
@@ -162,6 +189,7 @@ export function StallPanel() {
           <RecipeRow key={r.id} recipe={r} world={world} me={me} />
         ))}
       </ul>
+      <Stakes me={me} />
       <Upkeep me={me} />
     </Card>
   );

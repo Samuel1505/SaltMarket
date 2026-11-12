@@ -110,6 +110,7 @@ function InvestButton({ npc }: { npc: Npc }) {
             <label className="invest-field">
               <span className="invest-amount num">{formatMarks(amount)} marks</span>
               <input
+                className="range"
                 type="range"
                 min={min}
                 max={Math.max(min, cap)}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cmd, formatBps, formatMarks, offersFor, quoteFor } from '@saltmarket/shared/client';
-import { HARBOR_VENUE_ID, type Offer, type Quote, type WorldSnapshot } from '@saltmarket/shared/protocol';
+import { HARBOR_VENUE_ID, type Offer, type Quote, type Venue, type WorldSnapshot } from '@saltmarket/shared/protocol';
 import { useGame } from '../../store/game';
 import { act } from '../../store/act';
 import { Button, Card, Trend } from '../../ui/primitives';
@@ -54,20 +54,20 @@ function OfferPrice({ offers, quote, side, goodName }: { offers: Offer[]; quote:
   );
 }
 
-function GoodRow({ world, good }: { world: WorldSnapshot; good: Good }) {
+function GoodRow({ world, good, venueId }: { world: WorldSnapshot; good: Good; venueId: string }) {
   const [busy, setBusy] = useState<null | 'sell1' | 'sellAll' | 'buy'>(null);
   const def = world.catalog.goods.find((g) => g.id === good);
   const name = def?.name ?? good;
-  const quote = quoteFor(world, HARBOR_VENUE_ID, good);
-  const bids = offersFor(world, HARBOR_VENUE_ID, good, 'buy').filter((o) => !o.owner.isMe);
-  const asks = offersFor(world, HARBOR_VENUE_ID, good, 'sell').filter((o) => !o.owner.isMe);
+  const quote = quoteFor(world, venueId, good);
+  const bids = offersFor(world, venueId, good, 'buy').filter((o) => !o.owner.isMe);
+  const asks = offersFor(world, venueId, good, 'sell').filter((o) => !o.owner.isMe);
   const held = world.me?.inventory[good] ?? 0;
   const signedIn = !!world.me;
 
   async function run(kind: 'sell1' | 'sellAll' | 'buy') {
     setBusy(kind);
-    if (kind === 'buy') await act(cmd({ t: 'buy', good, qty: 1, venueId: HARBOR_VENUE_ID }));
-    else await act(cmd({ t: 'sell', good, qty: kind === 'sell1' ? 1 : held, venueId: HARBOR_VENUE_ID }));
+    if (kind === 'buy') await act(cmd({ t: 'buy', good, qty: 1, venueId }));
+    else await act(cmd({ t: 'sell', good, qty: kind === 'sell1' ? 1 : held, venueId }));
     setBusy(null);
   }
 
@@ -106,16 +106,34 @@ function GoodRow({ world, good }: { world: WorldSnapshot; good: Good }) {
   );
 }
 
+function VenuePicker({ venues, value, onChange }: { venues: Venue[]; value: string; onChange: (id: string) => void }) {
+  if (venues.length < 2) return null;
+  return (
+    <div className="venues" role="group" aria-label="Market to trade in">
+      {venues.map((v) => (
+        <Button key={v.id} size="sm" aria-pressed={v.id === value} onClick={() => onChange(v.id)} className="venue-btn">
+          <span className="venue-name">{v.ownerIsMe ? `${v.name} (yours)` : v.name}</span>
+          <span className="venue-fee num">{formatBps(v.feeBps + v.taxBps)}</span>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
 export function MarketPanel() {
   const world = useGame((s) => s.world);
+  const [picked, setPicked] = useState(HARBOR_VENUE_ID);
   if (!world) return null;
-  const harbor = world.venues.find((v) => v.id === HARBOR_VENUE_ID);
+  const venue = world.venues.find((v) => v.id === picked) ?? world.venues.find((v) => v.id === HARBOR_VENUE_ID);
+  const venueId = venue?.id ?? HARBOR_VENUE_ID;
+  const cut = venue ? venue.feeBps + venue.taxBps : world.catalog.harborTaxBps;
   return (
     <Card
-      title={harbor?.name ?? 'Harbor Market'}
-      hint={`Sell into the best offer · ${formatBps(world.catalog.harborTaxBps)} harbor tax`}
+      title={venue?.name ?? 'Harbor Market'}
+      hint={`Sell into the best offer · ${formatBps(cut)} ${venue?.kind === 'hall' ? 'fee' : 'harbor tax'}`}
       className="market"
     >
+      <VenuePicker venues={world.venues} value={venueId} onChange={setPicked} />
       <div className="market-scroll">
         <table className="market-table">
           <thead>
@@ -135,7 +153,7 @@ export function MarketPanel() {
           </thead>
           <tbody>
             {world.catalog.goods.map((g) => (
-              <GoodRow key={g.id} world={world} good={g.id} />
+              <GoodRow key={g.id} world={world} good={g.id} venueId={venueId} />
             ))}
           </tbody>
         </table>

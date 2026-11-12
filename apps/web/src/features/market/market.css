@@ -134,3 +134,22 @@
     margin: 0;
   }
 }
+.venues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+.venue-btn {
+  gap: var(--space-2);
+  max-width: 100%;
+}
+.venue-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 18ch;
+}
+.venue-fee {
+  font-weight: 500;
+  color: var(--text-muted);
+}
