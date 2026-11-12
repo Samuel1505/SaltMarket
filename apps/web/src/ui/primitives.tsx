@@ -16,7 +16,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return <button ref={ref} type={type} data-variant={variant} data-size={size} className={clsx('btn', className)} {...rest} />;
 });
 
-export function Card({ title, hint, className, children, ...rest }: HTMLAttributes<HTMLElement> & { title?: ReactNode; hint?: ReactNode }) {
+export function Card({ title, hint, className, children, ...rest }: Omit<HTMLAttributes<HTMLElement>, 'title'> & { title?: ReactNode; hint?: ReactNode }) {
   return (
     <section className={clsx('card', className)} {...rest}>
       {(title || hint) && (

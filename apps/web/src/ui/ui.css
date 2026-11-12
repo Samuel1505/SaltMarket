@@ -25,7 +25,6 @@
 }
 .btn:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
 }
 .btn[data-variant='primary'] {
   background: var(--accent);
@@ -33,6 +32,17 @@
   color: var(--on-accent);
 }
 .btn[data-variant='ghost'] {
+  background: transparent;
+  border-color: transparent;
+}
+/* Disabled reads as clearly off: flat well, faint text, no accent fill (not just a dimmer gold). */
+.btn:disabled,
+.btn[data-variant='primary']:disabled {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+  color: var(--text-faint);
+}
+.btn[data-variant='ghost']:disabled {
   background: transparent;
   border-color: transparent;
 }

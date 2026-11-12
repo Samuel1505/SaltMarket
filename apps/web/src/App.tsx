@@ -5,6 +5,8 @@ import { TopBar, EventBanner, ConnectionBanner } from './features/town/TopBar';
 import { GatherPanel } from './features/gather/GatherPanel';
 import { MarketPanel } from './features/market/MarketPanel';
 import { NpcCards } from './features/npcs/NpcCards';
+import { StallPanel } from './features/stall/StallPanel';
+import { ShipPanel } from './features/ship/ShipPanel';
 import { SignIn } from './features/auth/SignIn';
 import { hold } from './styles/tokens.motion';
 import './app.css';
@@ -32,9 +34,11 @@ export function App() {
           <div className="layout">
             <div className="col">
               {signedIn ? <GatherPanel /> : <SignIn />}
+              {signedIn && <StallPanel />}
               <MarketPanel />
             </div>
             <div className="col">
+              <ShipPanel />
               <NpcCards />
             </div>
           </div>

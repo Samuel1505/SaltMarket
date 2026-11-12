@@ -35,3 +35,20 @@ export const spring = { duration: 0.5, bounce: 0.2 } as const;
 export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
+
+/**
+ * CSS `linear()` easing that traces the spring above (damping ratio = 1 − bounce), for WAAPI.
+ * Lets the ship arrival use a real spring shape without a motion library. Settles within spring.duration.
+ */
+export function springEasing(samples = 32): string {
+  const zeta = 1 - spring.bounce;
+  const omega = (2 * Math.PI) / spring.duration;
+  const wd = omega * Math.sqrt(1 - zeta * zeta);
+  const pts: string[] = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = (i / samples) * spring.duration;
+    const x = i === samples ? 1 : 1 - Math.exp(-zeta * omega * t) * (Math.cos(wd * t) + ((zeta * omega) / wd) * Math.sin(wd * t));
+    pts.push(x.toFixed(4));
+  }
+  return `linear(${pts.join(', ')})`;
+}
