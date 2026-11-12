@@ -4,41 +4,49 @@
  * Curves and duration budgets follow emil-design-eng (see docs/FRONTEND_NOTES.md).
  */
 :root {
-  color-scheme: light;
+  /* Harbor at dusk: one dark theme. Deep blue-grey water, warm paper text, gold for marks and the main action. */
+  color-scheme: dark;
 
-  /* ── color: warm harbor paper, sea-teal accent, gold for marks ── */
-  --bg: #f4f1ea;
-  --surface: #fffdf8;
-  --surface-raised: #ffffff;
-  --surface-sunken: #ebe6db;
-  --border: #ddd5c6;
-  --border-strong: #c3b8a4;
-  --text: #1d2125;
-  --text-muted: #59606a;
-  --accent: #1d5c70;
-  --accent-hover: #174c5d;
-  --on-accent: #ffffff;
-  --gold: #835500;
-  --up: #17703f;
-  --down: #b0222b;
-  --warn: #8f5400;
-  --warn-bg: #fbefd9;
-  --closed: #5f646b;
-  --closed-bg: #e9e6e0;
-  --storm-tint: rgb(29 70 92 / 0.07);
-  --focus: #1d5c70;
-  --shadow-sm: 0 1px 0 rgb(40 30 10 / 0.04), 0 1px 2px rgb(40 30 10 / 0.06);
-  --shadow-md: 0 1px 0 rgb(40 30 10 / 0.04), 0 4px 12px rgb(40 30 10 / 0.08), 0 12px 32px rgb(40 30 10 / 0.06);
+  /* ── color ── */
+  --bg: #0e141b;
+  --surface: #151c25; /* cards */
+  --surface-raised: #1b2430; /* popovers, toasts, raised buttons */
+  --surface-sunken: #10161e; /* wells inside cards: node rows, chips, tracks */
+  --surface-hover: #212b38;
+  --border: #252f3c; /* hairline, a step above the surface */
+  --border-strong: #34404f;
+  --text: #ede6d8; /* warm paper white: 13.8:1 on --surface */
+  --text-muted: #a29b8f; /* 6.2:1 on --surface */
+  --text-faint: #8d8a83; /* labels, 4.9:1 on --surface */
+  --accent: #d8ae5e; /* the one accent: gold (marks, primary action, focus) */
+  --accent-hover: #e6c07a;
+  --on-accent: #1b1407;
+  --gold: #e3bb6d; /* marks in text: 9.5:1 on --surface */
+  --up: #63c7b2; /* soft teal, always with ▲ */
+  --down: #e98c7c; /* muted coral, always with ▼ */
+  --warn: #e3a95c;
+  --warn-bg: #2a2217;
+  --fill: #5f7f9c; /* meters and chart lines: calm slate, so gold stays the only accent */
+  --closed: #9097a0;
+  --closed-bg: #1f2630;
+  --storm-tint: rgb(98 140 182 / 0.08);
+  --focus: #e6c07a;
+  /* Depth: a faint top highlight + a soft low shadow; the hairline border does the edge. */
+  --shadow-sm: inset 0 1px 0 rgb(255 255 255 / 0.035), 0 1px 2px rgb(0 0 0 / 0.28);
+  --shadow-md: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 2px 6px rgb(0 0 0 / 0.22), 0 12px 32px rgb(0 0 0 / 0.38);
 
-  /* ── type ── */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* ── type: one self-hosted sans (Inter Variable, @fontsource-variable/inter) ── */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-md: 0.9375rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.5rem;
+  --text-sm: 0.84375rem;
+  --text-md: 0.96875rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
   --leading: 1.45;
+  /* Every number in the app is tabular so changing values never jitter. */
+  font-variant-numeric: tabular-nums;
 
   /* ── space: 4 px scale ── */
   --space-1: 4px;
@@ -53,7 +61,7 @@
   /* ── radius ── */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-lg: 14px;
 
   /* ── hit targets ── */
   --hit: 40px;
@@ -70,60 +78,6 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-hover: ease;
   --press-scale: 0.97;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: #11161a;
-    --surface: #181e24;
-    --surface-raised: #1f262e;
-    --surface-sunken: #0d1114;
-    --border: #2b343e;
-    --border-strong: #3c4753;
-    --text: #e8e5de;
-    --text-muted: #a1a8b1;
-    --accent: #66b6cc;
-    --accent-hover: #80c6d9;
-    --on-accent: #0a1b21;
-    --gold: #e4b65a;
-    --up: #5cc98c;
-    --down: #f3858a;
-    --warn: #e9a945;
-    --warn-bg: #2d2416;
-    --closed: #959aa1;
-    --closed-bg: #262b31;
-    --storm-tint: rgb(102 182 204 / 0.06);
-    --focus: #80c6d9;
-    --shadow-sm: 0 1px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 16px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.04);
-  }
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: #11161a;
-  --surface: #181e24;
-  --surface-raised: #1f262e;
-  --surface-sunken: #0d1114;
-  --border: #2b343e;
-  --border-strong: #3c4753;
-  --text: #e8e5de;
-  --text-muted: #a1a8b1;
-  --accent: #66b6cc;
-  --accent-hover: #80c6d9;
-  --on-accent: #0a1b21;
-  --gold: #e4b65a;
-  --up: #5cc98c;
-  --down: #f3858a;
-  --warn: #e9a945;
-  --warn-bg: #2d2416;
-  --closed: #959aa1;
-  --closed-bg: #262b31;
-  --storm-tint: rgb(102 182 204 / 0.06);
-  --focus: #80c6d9;
-  --shadow-sm: 0 1px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.04);
 }
 
 /* Reduced motion: no movement, no scale. Opacity/color stay (they aid comprehension). */

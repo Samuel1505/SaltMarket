@@ -216,7 +216,7 @@
   display: block;
   height: 100%;
   width: 100%;
-  background: var(--accent);
+  background: var(--fill);
   transform-origin: left center;
 }
 
