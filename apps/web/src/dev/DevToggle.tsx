@@ -1,6 +1,7 @@
 import { DEV_DATA } from './fixtures';
 import { notify } from '../lib/notify';
 import { useEffect } from 'react';
+import './dev.css';
 
 const STATES: Array<[string, string]> = [
   ['', 'Demo data'],

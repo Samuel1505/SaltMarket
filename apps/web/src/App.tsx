@@ -16,7 +16,6 @@ import { JUDGE } from './lib/judge';
 import { SignIn } from './features/auth/SignIn';
 import { hold } from './styles/tokens.motion';
 import { DevToggle } from './dev/DevToggle';
-import './dev/dev.css';
 import './app.css';
 
 type Tab = 'stall' | 'market' | 'npcs' | 'news';
