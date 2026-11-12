@@ -94,6 +94,11 @@
 .rules {
   font-size: var(--text-xs);
   color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.rules a {
+  color: var(--accent);
+  text-underline-offset: 2px;
 }
 .invest {
   display: grid;

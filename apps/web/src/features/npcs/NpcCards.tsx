@@ -11,6 +11,9 @@ import { ReasonBody, ReasonPopover } from '../../ui/Reason';
 import './npcs.css';
 
 export const RULES_FILE = 'packages/sim/src/pricing/merchant-rules.ts';
+const REPO_BLOB = 'https://github.com/Samuel1505/SaltMarket/blob/main/';
+// The server sends a repo-relative path; anything else is shown as plain text, never linked.
+const rulesHref = (path: string) => (/^[\w./-]+$/.test(path) && !path.includes('..') ? REPO_BLOB + path : null);
 
 /** Full tooltip for a merchant: fetched lazily from /api/npcs/:id/explain when it opens. */
 function ExplainBody({ npc, goodName }: { npc: Npc; goodName: (g: string) => string }) {
@@ -29,6 +32,8 @@ function ExplainBody({ npc, goodName }: { npc: Npc; goodName: (g: string) => str
   }, [npc.id, npc.reasoning.tick]);
 
   const reason = data?.reasoning ?? npc.reasoning;
+  const rulesPath = data?.rulesFile ?? RULES_FILE;
+  const href = rulesHref(rulesPath);
   return (
     <div className="explain">
       <ReasonBody reason={reason} who={npc.name} />
@@ -49,7 +54,14 @@ function ExplainBody({ npc, goodName }: { npc: Npc; goodName: (g: string) => str
       )}
       {error && <p className="popup-section muted">{error}</p>}
       <p className="popup-section rules">
-        Read the rules: <code>{data?.rulesFile ?? RULES_FILE}</code>
+        Read the rules:{' '}
+        {href ? (
+          <a href={href} target="_blank" rel="noreferrer">
+            <code>{rulesPath}</code>
+          </a>
+        ) : (
+          <code>{rulesPath}</code>
+        )}
       </p>
     </div>
   );
