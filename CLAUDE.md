@@ -217,28 +217,34 @@ Open questions for the human:
 ### Status — frontend
 
 ```
-Branch:           frontend/web (from local main 19d6214; `git fetch` needs GitHub credentials in this shell)
-Last session:     2026-11-12
-What works:       apps/web (Vite + React 19 + TS). Tokens (tokens.css / tokens.motion.ts, Emil curves); guard tests:
-                  no raw durations/curves/colors outside tokens, no chain words outside features/judge/ (pnpm --filter
-                  @saltmarket/web test). WS store with per-frame batching, reconnect backoff, ack timeouts. Guest sign-in;
-                  top bar (purse, clock, ship countdown); event + reconnecting banners; Gather (shared cooldown bar via
-                  WAAPI, "+2 fish" pop); Harbor market (Sell 1 / Sell all / Buy 1, ▲/▼ + %, reasoning popover on every
-                  merchant price); NPC cards (status badge, purse trend, reasoning popover from /explain with rules path,
-                  recent decisions, Closed: needs investment → Invest slider, rescue countdown, investor line).
-                  Verified headless against pnpm dev:mock at 1280 and 380 px: gather → sell ≈ 1 s, invest reopens Ludo,
-                  no console errors. Privy email/Google sign-in (lazy-loaded on click, embedded wallet off, token →
-                  POST /api/auth/login provider 'social'); dialog verified headless, exchange verified on the mock.
-                  "Read the rules" links to merchant-rules.ts on github.com/Samuel1505/SaltMarket (main).
-Next up:          Stall panel (inventory, craft barrel / cure fish progress, upgrade, rent) and selling to the Captain;
-                  feed + notable toasts; judge panel; Watch a week; Halls; Ledger drawer; leaderboard.
-Known issues:     Root `pnpm test` doesn't run web tests (root vitest.config.ts is backend-owned; request: add
-                  'apps/web/src/**/*.test.ts' to include). Price flash not built yet (Nov 13 polish). Not yet run against
-                  JUDGE_MODE=1 pnpm dev (real sim). review-animations / break-ui passes still to do.
+Branch:           frontend/web (local commits only, not pushed)
+Last session:     2026-11-12 (evening): Step 1 palette + all of Step 2 done
+What works:       Dark "harbor at dusk" tokens (gold = the one accent, teal ▲ / coral ▼, Inter Variable self-hosted,
+                  tabular numerals everywhere, contrast checked ≥ 4.5:1). Everything from before, plus:
+                  Stall (inventory, craft barrel / cure fish with live WAAPI progress, what's missing + where to gather it,
+                  upgrade, rent, shops-you-back payout lines); Ship panel (countdown, ceiling with reason popover, sell to
+                  the Captain + confirmation, spring on docking); judge strip (?judge=1: storm / fair winds / salt glut /
+                  force broke with merchant picker / speed ×1–×64 / pause / rules link); Ledger drawer (mode, health,
+                  reconciliation, settlements + copyable hashes, links only if explorerUrl, "Ledger stuck at <batch>");
+                  Watch a week dialog (storm / close merchant + investor day / flood shocks, static SVG price charts,
+                  Captain ceiling, merchant purses + status, reason notes, summary); Exchange Halls (compare markets,
+                  buy license, fee slider, income) + venue picker on the market; Harbor news feed (filters, ×N),
+                  rate-limited collapsing toasts (lib/notify), price flash, leaderboard. Root `pnpm dev` starts server +
+                  web (PORT is shared; WEB_PORT / SALTMARKET_SERVER override); root `pnpm test` runs web tests (65 pass).
+                  Verified headless against the REAL sim (PORT=3100 JUDGE_MODE=1, own world in /tmp/sm-web): fresh guest
+                  gather → barrel → cure → sell 4 cured fish to the Captain → buy a Hall → set 1% fee; Watch a week 168
+                  ticks in 60.2 s with live town unchanged; no console errors; no horizontal scroll at 390 px.
+Next up:          Step 3 layout (3 columns: stall+gather | market | merchants, feed at bottom, 390 px tabs), toast position
+                  (still bottom-center), primitive polish, review-animations + break-ui passes, Privy against the real
+                  server (reload + restart), README frontend sections, clean-clone test.
+Known issues:     Requests for backend: (1) Quote.trend/change24hBps stay flat while volume24h is 0, so a storm with no
+                  player trades shows no fish ▲ even though merchant asks jump; suggest falling back to best-ask movement.
+                  (2) A player-less world after ~14 game days at high speed had all 7 producers at purse 0 but "open".
+                  Root `pnpm dev` here collides with the live demo on 3000; use PORT=3100.
 Open questions:   Privy dashboard: add the hosted demo origin to allowed origins; confirm Google is enabled (email works).
-                  Joint check with backend: a real Privy sign-in against the real server survives reload + restart.
-Tooling note:     pnpm isn't installed system-wide; a shim at ~/.local/bin/pnpm runs `npx pnpm@11.24.0`. Privy pulled in
-                  optional native builds; pnpm-workspace.yaml allowBuilds sets them false (pure-JS fallbacks).
+Tooling note:     This shell has no node on PATH: use ~/.nvm/versions/node/v24.19.0/bin and `npx pnpm@11.24.0` (the old
+                  ~/.local/bin/pnpm shim is gone). Emil skills are no longer in ~/.claude/skills; a copy of the same repo is
+                  at ~/Desktop/dev/unless-mainnet-deploy/docs/design-references/emil-kowalski/skills.
 ```
 
 ## 12. Things to ask the human early
