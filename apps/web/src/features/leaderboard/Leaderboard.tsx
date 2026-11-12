@@ -40,7 +40,7 @@ export function Leaderboard() {
     let live = true;
     const load = async () => {
       const r = await api('/api/leaderboard', LeaderboardResponse);
-      if (live && r.ok) setBoard(devBoard(r.data));
+      if (live && r.ok) setBoard(import.meta.env.DEV ? devBoard(r.data) : r.data);
     };
     void load();
     const id = setInterval(load, POLL_MS);

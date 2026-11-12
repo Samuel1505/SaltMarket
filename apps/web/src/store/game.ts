@@ -158,7 +158,7 @@ function flush() {
         break; // tick, pong, error: nothing to store
     }
   }
-  if (DEV_DATA && world && world !== s.world) {
+  if (import.meta.env.DEV && DEV_DATA && world && world !== s.world) {
     world = devWorld(world);
     feed = world.feed;
   }
