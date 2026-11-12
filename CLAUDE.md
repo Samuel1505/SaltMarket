@@ -218,33 +218,36 @@ Open questions for the human:
 
 ```
 Branch:           frontend/web (local commits only, not pushed)
-Last session:     2026-11-12 (evening): Step 1 palette + all of Step 2 done
-What works:       Dark "harbor at dusk" tokens (gold = the one accent, teal ▲ / coral ▼, Inter Variable self-hosted,
-                  tabular numerals everywhere, contrast checked ≥ 4.5:1). Everything from before, plus:
-                  Stall (inventory, craft barrel / cure fish with live WAAPI progress, what's missing + where to gather it,
-                  upgrade, rent, shops-you-back payout lines); Ship panel (countdown, ceiling with reason popover, sell to
-                  the Captain + confirmation, spring on docking); judge strip (?judge=1: storm / fair winds / salt glut /
-                  force broke with merchant picker / speed ×1–×64 / pause / rules link); Ledger drawer (mode, health,
-                  reconciliation, settlements + copyable hashes, links only if explorerUrl, "Ledger stuck at <batch>");
-                  Watch a week dialog (storm / close merchant + investor day / flood shocks, static SVG price charts,
-                  Captain ceiling, merchant purses + status, reason notes, summary); Exchange Halls (compare markets,
-                  buy license, fee slider, income) + venue picker on the market; Harbor news feed (filters, ×N),
-                  rate-limited collapsing toasts (lib/notify), price flash, leaderboard. Root `pnpm dev` starts server +
-                  web (PORT is shared; WEB_PORT / SALTMARKET_SERVER override); root `pnpm test` runs web tests (65 pass).
-                  Verified headless against the REAL sim (PORT=3100 JUDGE_MODE=1, own world in /tmp/sm-web): fresh guest
-                  gather → barrel → cure → sell 4 cured fish to the Captain → buy a Hall → set 1% fee; Watch a week 168
-                  ticks in 60.2 s with live town unchanged; no console errors; no horizontal scroll at 390 px.
-Next up:          Step 3 layout (3 columns: stall+gather | market | merchants, feed at bottom, 390 px tabs), toast position
-                  (still bottom-center), primitive polish, review-animations + break-ui passes, Privy against the real
-                  server (reload + restart), README frontend sections, clean-clone test.
-Known issues:     Requests for backend: (1) Quote.trend/change24hBps stay flat while volume24h is 0, so a storm with no
-                  player trades shows no fish ▲ even though merchant asks jump; suggest falling back to best-ask movement.
-                  (2) A player-less world after ~14 game days at high speed had all 7 producers at purse 0 but "open".
-                  Root `pnpm dev` here collides with the live demo on 3000; use PORT=3100.
-Open questions:   Privy dashboard: add the hosted demo origin to allowed origins; confirm Google is enabled (email works).
-Tooling note:     This shell has no node on PATH: use ~/.nvm/versions/node/v24.19.0/bin and `npx pnpm@11.24.0` (the old
-                  ~/.local/bin/pnpm shim is gone). Emil skills are no longer in ~/.claude/skills; a copy of the same repo is
-                  at ~/Desktop/dev/unless-mainnet-deploy/docs/design-references/emil-kowalski/skills.
+Last session:     2026-11-12 (night): Steps 1, 2 and 3 done; nothing cut
+What works:       Dark "harbor at dusk" tokens (gold the one accent, teal ▲ / coral ▼, Inter Variable self-hosted, contrast
+                  ≥ 4.5:1). Layout: stall + gather | ship + market + halls | merchants, news + leaderboard along the bottom
+                  (≥ 1360 px); 2 columns below that; bottom tabs Stall / Market / Merchants / News at ≤ 760 px, no sideways
+                  scroll. Market and Halls tables restack by their own width (container queries). Every feature from
+                  FRONTEND_HANDOFF §2: gather, market + venue picker, reasoning popovers, stall + crafting, Captain sale,
+                  merchant cards + Invest, Halls (license, fee slider, income, comparison), Watch a week, judge strip,
+                  Ledger drawer, feed + collapsing rate-limited toasts, price flash, leaderboard.
+                  Checked headless against the REAL sim (PORT=3100 JUDGE_MODE=1, world in /tmp/sm-web):
+                  §10 ✓ gather → sell; ✓ gather → barrel → cure → sell to the docked Captain; ✓ tooltips on hover/tap/focus
+                  + rules link; ✓ Storm (banner, reasons, news; fish ▲ once fish trades); ✓ force broke → Invest; ✓ buy Hall +
+                  1% fee; ✓ Watch a week 168 ticks in 60.2 s, live town unchanged; ✓ kill server → "Reconnecting…" → resync
+                  without reload; ✓ keyboard-only gather + popover on focus; ✓ 390 px; ✓ no console errors; ✓ vocabulary test.
+                  break-ui (dev-only ?data=worst|empty, kept out of the prod bundle): fixed hall overflow at 390 px, hall
+                  table stacking, leaderboard "you" marker, title on truncated names, empty merchants text.
+                  review-animations: faster exits for popover/dialog/drawer, reduced motion on slider thumb; approve.
+                  Clean clone → pnpm install → pnpm dev (PORT=3102) → first trade in 1.7 s, no console errors.
+                  README browser steps (frontend owner section) written.
+Not verified:     Ledger drawer in `near` mode on the testnet server (only memory mode locally). Privy sign-in to the end:
+                  the dialog opens (email + Google, dark, no wallet wording) but needs a real inbox; "same player after
+                  reload + server restart" is still a manual check for the human.
+Known issues:     Requests for backend: (1) Quote.trend stays flat while volume24h is 0, so a storm with no fish trades
+                  shows no ▲ (merchant asks do jump); suggest best-ask fallback. (2) Long player-less runs leave the 7
+                  producers at purse 0 but "open", and the Smokehouse stops bidding ("No buyer" for raw goods).
+                  Privy: dashboard reports google_oauth false although the button says "email or Google"; enable Google or
+                  tell me to drop the word. Privy's API answered in 12–20 s from this network (UI now says so after 4 s
+                  and keeps guest play available). Root `pnpm dev` here collides with the live demo on 3000; use PORT=3100.
+Tooling note:     This shell has no node on PATH: use ~/.nvm/versions/node/v24.19.0/bin and `npx pnpm@11.24.0`. Emil skills
+                  are not in ~/.claude/skills; a copy is at ~/Desktop/dev/unless-mainnet-deploy/docs/design-references/
+                  emil-kowalski/skills. The web app reads the public PRIVY_APP_ID from the root .env (vite define).
 ```
 
 ## 12. Things to ask the human early
