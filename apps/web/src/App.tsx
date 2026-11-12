@@ -8,6 +8,8 @@ import { NpcCards } from './features/npcs/NpcCards';
 import { StallPanel } from './features/stall/StallPanel';
 import { ShipPanel } from './features/ship/ShipPanel';
 import { HallsPanel } from './features/halls/HallsPanel';
+import { FeedPanel, useFeedToasts } from './features/feed/FeedPanel';
+import { Leaderboard } from './features/leaderboard/Leaderboard';
 import { JudgePanel } from './features/judge/JudgePanel';
 import { LedgerDrawer } from './features/judge/LedgerDrawer';
 import { JUDGE } from './lib/judge';
@@ -21,6 +23,7 @@ export function App() {
   const storm = useGame((s) => s.world?.events.some((e) => e.kind === 'storm') ?? false);
 
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  useFeedToasts();
 
   useEffect(() => {
     connect();
@@ -48,9 +51,11 @@ export function App() {
             <div className="col">
               <ShipPanel />
               <NpcCards />
+              <Leaderboard />
             </div>
           </div>
         )}
+        {hasWorld && <FeedPanel />}
       </main>
       {JUDGE && <LedgerDrawer open={ledgerOpen} onOpenChange={setLedgerOpen} />}
       <Toaster

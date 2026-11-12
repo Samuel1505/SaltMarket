@@ -61,6 +61,18 @@
 .price-value {
   font-weight: 650;
   color: var(--gold);
+  transition: color var(--dur-drawer) var(--ease-hover);
+}
+.price-value[data-flash='up'] {
+  color: var(--up);
+  transition-duration: var(--dur-press);
+}
+.price-value[data-flash='down'] {
+  color: var(--down);
+  transition-duration: var(--dur-press);
+}
+.price-flash-glyph {
+  font-size: var(--text-xs);
 }
 .price-who {
   font-size: var(--text-xs);

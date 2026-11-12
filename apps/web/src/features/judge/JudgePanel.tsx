@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { notify } from '../../lib/notify';
 import { DevOkResponse } from '@saltmarket/shared/protocol';
 import { useGame } from '../../store/game';
 import { api } from '../../lib/api';
@@ -12,8 +12,8 @@ const SPEEDS = [1, 4, 16, 64] as const;
 
 async function post(path: string, body: object): Promise<void> {
   const r = await api(path, DevOkResponse, { method: 'POST', body: JSON.stringify(body) });
-  if (r.ok) toast(r.data.message);
-  else toast.error(r.message);
+  if (r.ok) notify(r.data.message);
+  else notify(r.message, { tone: 'error' });
 }
 
 /** Judge controls (?judge=1): shocks, a forced closure, and the town clock. Sits under the top bar so the reaction stays in view. */

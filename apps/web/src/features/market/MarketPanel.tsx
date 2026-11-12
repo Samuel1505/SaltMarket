@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { hold } from '../../styles/tokens.motion';
 import { cmd, formatBps, formatMarks, offersFor, quoteFor } from '@saltmarket/shared/client';
 import { HARBOR_VENUE_ID, type Offer, type Quote, type Venue, type WorldSnapshot } from '@saltmarket/shared/protocol';
 import { useGame } from '../../store/game';
@@ -9,6 +10,27 @@ import './market.css';
 
 type Good = Quote['good'];
 
+/** A price that briefly takes the up/down colour (plus ▲/▼) when it changes. Colour transition only, no movement. */
+function FlashPrice({ pips }: { pips: number }) {
+  const prev = useRef(pips);
+  const [dir, setDir] = useState<'up' | 'down' | null>(null);
+  useEffect(() => {
+    if (pips === prev.current) return;
+    setDir(pips > prev.current ? 'up' : 'down');
+    prev.current = pips;
+    const t = setTimeout(() => setDir(null), hold.flash);
+    return () => clearTimeout(t);
+  }, [pips]);
+  return (
+    <span className="price-value num" data-flash={dir ?? undefined}>
+      {formatMarks(pips)}
+      <span className="price-flash-glyph" aria-hidden="true">
+        {dir === 'up' ? ' ▲' : dir === 'down' ? ' ▼' : ''}
+      </span>
+    </span>
+  );
+}
+
 function OfferPrice({ offers, quote, side, goodName }: { offers: Offer[]; quote: Quote | undefined; side: Offer['side']; goodName: string }) {
   const best = offers[0];
   if (!best) return <span className="muted price-none">{side === 'buy' ? 'No buyer' : 'None for sale'}</span>;
@@ -18,7 +40,7 @@ function OfferPrice({ offers, quote, side, goodName }: { offers: Offer[]; quote:
       label={`${best.owner.name} ${verb} ${formatMarks(best.pricePips)} marks for ${goodName}. Why?`}
       trigger={
         <span className="price">
-          <span className="price-value num">{formatMarks(best.pricePips)}</span>
+          <FlashPrice pips={best.pricePips} />
           <span className="price-who">{best.owner.isMe ? 'you' : best.owner.name}</span>
         </span>
       }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Drawer } from '@base-ui/react/drawer';
-import { toast } from 'sonner';
+import { notify } from '../../lib/notify';
 import { formatMarks } from '@saltmarket/shared/client';
 import { JudgeLedgerResponse, type JudgeLedger } from '@saltmarket/shared/protocol';
 import { api } from '../../lib/api';
@@ -21,9 +21,9 @@ function Hash({ hash, url }: { hash: string; url?: string | undefined }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(hash);
-      toast('Transaction hash copied');
+      notify('Transaction hash copied');
     } catch {
-      toast.error('Could not copy. Select the hash instead.');
+      notify('Could not copy. Select the hash instead.', { tone: 'error' });
     }
   }
   return (

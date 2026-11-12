@@ -27,6 +27,8 @@ export const hold = {
   tooltipDelay: 250,
   /** Toast lifetime. */
   toast: 4000,
+  /** A changed price keeps its up/down colour this long, then eases back. */
+  flash: 1200,
 } as const;
 
 /** Spring for the one decorative moment (ship arrival). Apple-style params; subtle bounce. */
