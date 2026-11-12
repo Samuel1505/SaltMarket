@@ -58,7 +58,6 @@ function Flow({ displayName, onDone }: Omit<Props, 'appId'>) {
 }
 
 export default function PrivyLogin({ appId, displayName, onDone }: Props) {
-  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
   return (
     <PrivyProvider
       appId={appId}
@@ -66,7 +65,7 @@ export default function PrivyLogin({ appId, displayName, onDone }: Props) {
         loginMethods: ['email', 'google'],
         embeddedWallets: { ethereum: { createOnLogin: 'off' }, solana: { createOnLogin: 'off' } },
         appearance: {
-          theme: dark ? 'dark' : 'light',
+          theme: 'dark', // the game has one dark theme
           accentColor: token('--accent'),
           landingHeader: 'Open a stall at the harbor',
           loginMessage: 'Sign in to keep your stall between visits.',

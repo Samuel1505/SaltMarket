@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent } from 'react';
+import { hold } from '../../styles/tokens.motion';
 import { loginGuest, type Result } from '../../lib/api';
 import type { Session } from '@saltmarket/shared/protocol';
 import { saveSession } from '../../lib/session';
@@ -22,6 +23,14 @@ export function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [social, setSocial] = useState(false);
+  const [slow, setSlow] = useState(false);
+
+  // The sign-in service can take a while to answer; say so instead of leaving a silent spinner.
+  useEffect(() => {
+    if (!social) return setSlow(false);
+    const t = setTimeout(() => setSlow(true), hold.slowSignIn);
+    return () => clearTimeout(t);
+  }, [social]);
 
   const onSocialDone = useCallback((r: Result<Session> | { ok: false; code: 'CANCELLED'; message: string }) => {
     setSocial(false);
@@ -32,6 +41,7 @@ export function SignIn() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    setSocial(false); // guest wins if the email sign-in is still opening
     setBusy(true);
     setError(null);
     const r = await loginGuest(name.trim() || undefined);
@@ -67,6 +77,11 @@ export function SignIn() {
           </p>
         </>
       )}
+      {social && slow && (
+        <p className="signin-note muted" role="status">
+          Still reaching the sign-in service. It can take a little while; you can play as a guest meanwhile.
+        </p>
+      )}
       {social && PRIVY_APP_ID && (
         <Suspense fallback={null}>
           <PrivyLogin appId={PRIVY_APP_ID} displayName={name.trim() || undefined} onDone={onSocialDone} />
@@ -83,7 +98,7 @@ export function SignIn() {
             autoComplete="nickname"
           />
         </label>
-        <Button type="submit" variant={PRIVY_APP_ID ? 'ghost' : 'primary'} disabled={busy || social}>
+        <Button type="submit" variant={PRIVY_APP_ID ? 'default' : 'primary'} disabled={busy}>
           {busy ? 'Opening…' : 'Play as guest'}
         </Button>
       </form>

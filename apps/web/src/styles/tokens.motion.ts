@@ -29,6 +29,8 @@ export const hold = {
   toast: 4000,
   /** A changed price keeps its up/down colour this long, then eases back. */
   flash: 1200,
+  /** After this long, "Opening sign-in…" explains that the sign-in service is slow. */
+  slowSignIn: 4000,
 } as const;
 
 /** Spring for the one decorative moment (ship arrival). Apple-style params; subtle bounce. */
