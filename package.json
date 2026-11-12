@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter @saltmarket/server dev",
+    "dev": "pnpm --parallel --filter @saltmarket/server --filter @saltmarket/web dev",
     "dev:mock": "pnpm --filter @saltmarket/server dev:mock",
     "dev:chain": "LEDGER=near pnpm --filter @saltmarket/server dev",
     "sim:headless": "tsx scripts/sim-headless.ts",
