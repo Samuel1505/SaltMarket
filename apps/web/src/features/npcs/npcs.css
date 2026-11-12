@@ -1,0 +1,121 @@
+.npcs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+.npc {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  min-width: 0;
+}
+.npc[data-status='closed'] {
+  background: var(--closed-bg);
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+.npc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.npc-who {
+  display: grid;
+  min-width: 0;
+}
+.npc-name,
+.npc-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.npc-title {
+  font-size: var(--text-xs);
+}
+.npc-purse {
+  font-size: var(--text-sm);
+}
+.npc-reason {
+  font-size: var(--text-sm);
+}
+.npc-closed {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  justify-items: start;
+}
+.npc-closed strong {
+  color: var(--text);
+}
+.npc-closed .btn {
+  margin-top: var(--space-1);
+}
+.npc-investor {
+  font-size: var(--text-xs);
+}
+.npc-recent {
+  font-size: var(--text-xs);
+}
+.npc-recent summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  min-height: 24px;
+}
+.npc-recent ol {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: 2px;
+}
+.explain-prices {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.explain-prices li {
+  display: grid;
+}
+.explain-price-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-weight: 600;
+}
+.rules {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.invest {
+  display: grid;
+  gap: var(--space-3);
+  width: min(300px, calc(100vw - 32px));
+}
+.invest-field {
+  display: grid;
+  gap: var(--space-1);
+}
+.invest-amount {
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--gold);
+}
+.invest-field input[type='range'] {
+  width: 100%;
+  min-height: var(--hit);
+  accent-color: var(--accent);
+}
+.invest-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+}

@@ -1,0 +1,77 @@
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.topbar-brand h1 {
+  font-size: var(--text-lg);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.topbar-name {
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 24ch;
+}
+.topbar-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  align-items: flex-start;
+}
+.topbar-purse .stat-value {
+  color: var(--gold);
+  font-size: var(--text-lg);
+  line-height: 1.2;
+  min-width: 7ch;
+}
+.topbar-purse .unit {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.topbar-ship {
+  display: grid;
+  gap: 2px;
+}
+.ship-name {
+  font-style: italic;
+}
+.events {
+  display: grid;
+  gap: var(--space-2);
+}
+.banner[data-kind='storm'] {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+}
+.conn {
+  justify-content: center;
+}
+
+/* Phones: a tall sticky bar would eat a third of the screen; let it scroll away. */
+@media (max-width: 640px) {
+  .topbar {
+    position: static;
+    padding: var(--space-3);
+  }
+  .topbar-stats {
+    gap: var(--space-2) var(--space-5);
+  }
+}

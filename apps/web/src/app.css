@@ -1,0 +1,40 @@
+.app {
+  min-height: 100dvh;
+}
+/* Storm: a subtle full-bleed tint; prices stay fully legible. */
+.app[data-storm='true'] {
+  background: linear-gradient(var(--storm-tint), var(--storm-tint)), var(--bg);
+}
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+.col {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.loading {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .main {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+}

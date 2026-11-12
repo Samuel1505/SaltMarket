@@ -1,0 +1,123 @@
+.nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.node {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.node-info {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.node-title {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.node-sub,
+.node-status {
+  font-size: var(--text-xs);
+}
+.node-action {
+  position: relative;
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+  min-width: 168px;
+}
+.node-status {
+  text-align: right;
+  min-height: 1.45em;
+}
+.gather-btn {
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+}
+/* Cooldown progress along the bottom edge of the button (transform only). */
+.cooldown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--surface-sunken);
+}
+.cooldown > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+.gather-btn:disabled .cooldown {
+  opacity: 1;
+}
+
+/* "+2 fish": rises in from just below, leaves upward. Transitions, so rapid gathers retarget smoothly. */
+.pops {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-1));
+  display: grid;
+  justify-items: end;
+  pointer-events: none;
+}
+.pop {
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--up);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px var(--space-2);
+  box-shadow: var(--shadow-sm);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-pop) var(--ease-out),
+    transform var(--dur-pop) var(--ease-out);
+}
+@starting-style {
+  .pop {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+.pop[data-leaving='true'] {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop,
+  .pop[data-leaving='true'] {
+    transform: none;
+  }
+  @starting-style {
+    .pop {
+      transform: none;
+    }
+  }
+}
+
+@media (max-width: 520px) {
+  .node {
+    grid-template-columns: 1fr;
+  }
+  .node-action {
+    justify-items: stretch;
+    min-width: 0;
+  }
+  .node-status {
+    text-align: left;
+  }
+}
