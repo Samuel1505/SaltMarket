@@ -35,10 +35,27 @@ In most games, prices are numbers a designer types into a spreadsheet and patche
 
 ```bash
 pnpm install
-pnpm dev          # real economy, offline ledger, http://127.0.0.1:3000
+pnpm dev          # real economy (offline ledger) on :3000 + the game in the browser at http://127.0.0.1:5173
 ```
 
-<!-- frontend owner: browser steps (Play → gather → sell → hover a merchant → Storm → Ledger drawer → Watch a week) -->
+Ports are configurable: `PORT=3100 pnpm dev` moves the server and points the web app at it; `WEB_PORT` moves the web app.
+
+**In the browser** (open http://127.0.0.1:5173/?judge=1 to get the judge controls; for these the server must run with `JUDGE_MODE=1 pnpm dev`):
+
+| Do | See |
+| --- | --- |
+| Type a name, press **Play as guest** | Your stall opens with a purse of 300 marks; the top bar shows the purse, the town clock and the ship countdown |
+| Press **Gather fish**, then **Sell 1** on the Fish row | "+2 fish", then a toast like "Sold 1 fish to Old Pell's Smokehouse for 8.6 marks"; the purse goes up |
+| Hover, tap or Tab to any price or merchant quote | A popover with the merchant's reason ("Storm kept the boats in. Stock is low, raising my price 23%."), its factors (stock, margin, demand) and a link to `merchant-rules.ts` |
+| Gather 3 timber → **Craft barrel**; gather 6 fish + 3 salt → **Cure fish** | Progress bars, then 4 cured fish in your stall |
+| When the ship docks, press **Sell 4 cured fish to Captain Maren** | The sale confirmation and about 180 marks more in your purse |
+| Judge strip → **Storm** | A storm banner; fishermen raise their asks and say why ("Storm kept the boats in…"), the Harbor news feed explains each move, and once fish trades the price row shows ▲ with "storm cut the catch" |
+| Judge strip → pick the Cooper → **Force broke**, then **Invest** on her card | "Closed: needs investment" → the shop reopens; your stake and payouts appear under "Shops you back" |
+| **Exchange Halls** → **Buy license**, move the fee slider to 1% | Your Hall appears in the comparison with its fee, volume and fee income; merchants move to the cheapest venue the next day |
+| **Watch a week** → keep "Storm on day 2" → **Watch a week** | Seven game days in about 60 s on a copy of the town: price lines per good, the Captain's ceiling, merchant purses and open/closed state, the reasons scrolling, then a summary. The live town is unchanged |
+| Judge strip → **Ledger** | Settlement batches with status and transaction hashes, balances in the game vs last settled, reconciliation mismatches (mode `memory` offline, `near` on the testnet server) |
+
+Everything also works at phone width (bottom tabs: Stall / Market / Merchants / News). Players never see chain words; only the judge strip and Ledger drawer use them.
 
 **Without a browser:**
 
