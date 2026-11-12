@@ -180,6 +180,10 @@
   opacity: 0;
   transform: scale(0.97);
 }
+/* Exit is the system responding: snap away faster than the entrance. */
+.popup[data-ending-style] {
+  transition-duration: var(--dur-press);
+}
 @media (prefers-reduced-motion: reduce) {
   .popup[data-starting-style],
   .popup[data-ending-style] {
@@ -339,6 +343,10 @@
 .drawer[data-ending-style] {
   transform: translateX(100%);
 }
+.drawer[data-ending-style],
+.drawer-backdrop[data-ending-style] {
+  transition-duration: var(--dur-dropdown);
+}
 .drawer[data-swiping] {
   transition: none;
   user-select: none;
@@ -409,6 +417,10 @@
 .dialog[data-ending-style] {
   opacity: 0;
   transform: scale(0.97);
+}
+.dialog[data-ending-style],
+.dialog-backdrop[data-ending-style] {
+  transition-duration: var(--dur-tooltip);
 }
 @media (prefers-reduced-motion: reduce) {
   .dialog[data-starting-style],
@@ -560,6 +572,11 @@
 }
 .range:active::-webkit-slider-thumb {
   transform: scale(1.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .range:active::-webkit-slider-thumb {
+    transform: none;
+  }
 }
 .range:focus-visible {
   outline: none;
