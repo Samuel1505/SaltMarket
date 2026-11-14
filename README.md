@@ -2,9 +2,8 @@
 
 **A browser trading game where the economy *is* the game: ten NPC merchants with their own wallets set prices from their own stock and demand, explain every price in plain English, and settle balances as NEP-245 tokens on NEAR — without the player ever seeing the chain.**
 
-Built at NEAR HACKATHON for the **Games With Real Economies** track (`games`).
+Built at NEAR HACKATHON for the **Games With Real Economies** **AI SWARMS** **AGENT ECONOMY** tracks.
 
-<!-- Demo video: add link before submitting. Demo post (X): add link before submitting. -->
 
 | | |
 | --- | --- |
